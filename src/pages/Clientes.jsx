@@ -4,57 +4,60 @@ import {
   Stack, TextField, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider
 } from '@mui/material'
 import dayjs from 'dayjs'
+import { API_BASE_URL } from '../config/api'
 
-// ---------- Datos de ejemplo; reemplaza por tu API/DB ----------
-const ORDENES = [
-  {
-    id: 'ORD-001',
-    fecha: '2025-11-10T10:10:00Z',
-    cliente: { id: 'CLI-1', nombre: 'Ana López', telefono: '+502 5555 1111' },
-    items: [
-      { id: 1, name: 'Shampoo pH Neutro 1L', sku: 'SH-001', price: 89.9, qty: 1 },
-      { id: 2, name: 'Toalla Secado 1200gsm', sku: 'TS-1200', price: 99.0, qty: 2 },
-    ],
-  },
-  {
-    id: 'ORD-002',
-    fecha: '2025-11-11T16:40:00Z',
-    cliente: { id: 'CLI-2', nombre: 'Carlos Méndez', telefono: '+502 5555 2222' },
-    items: [
-      { id: 3, name: 'Cera Sintética 500ml', sku: 'CE-500', price: 129.0, qty: 1 },
-    ],
-  },
-  {
-    id: 'ORD-003',
-    fecha: '2025-11-12T03:20:00Z',
-    cliente: { id: 'CLI-1', nombre: 'Ana López', telefono: '+502 5555 1111' },
-    items: [
-      { id: 4, name: 'Guante Microfibra Premium', sku: 'GM-010', price: 59.5, qty: 3 },
-      { id: 5, name: 'Ambientador New Car', sku: 'AN-001', price: 25.0, qty: 2 },
-    ],
-  },
-]
-
-function calcTotal(items) {
-  return items.reduce((s, it) => s + it.price * it.qty, 0)
+// Calcula total de una orden a partir de sus items
+function calcTotal(items = []) {
+  return items.reduce((s, it) => {
+    const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
+    const qty = it.cantidad ?? it.qty ?? 1
+    return s + precio * qty
+  }, 0)
 }
 
 export default function Clientes() {
   const [query, setQuery] = React.useState('')
-  const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente
-  const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden
+  const [ordenes, setOrdenes] = React.useState([])
+  const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
+  const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
 
-  // ---- Agregar/actualizar clientes agregando info agregada desde las órdenes ----
+  // Cargar órdenes desde el backend
+  React.useEffect(() => {
+    const cargarOrdenes = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/ordenes`)
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('Error backend /ordenes:', txt)
+          return
+        }
+        const data = await res.json()
+        console.log('Ordenes cargadas:', data)
+        setOrdenes(data)
+      } catch (err) {
+        console.error('Error de red al cargar ordenes:', err)
+      }
+    }
+
+    cargarOrdenes()
+  }, [])
+
+  // ---- Construir "clientes" agregando info desde las órdenes ----
   const clientes = React.useMemo(() => {
     const map = new Map()
-    for (const o of ORDENES) {
-      const key = o.cliente.id || o.cliente.telefono || o.cliente.nombre
-      const totalOrden = calcTotal(o.items)
+
+    for (const o of ordenes) {
+      const cli = o.cliente || {}
+      const key = cli.id || cli.telefono || cli.nombre
+      if (!key) continue
+
+      const totalOrden = calcTotal(o.items || [])
+
       if (!map.has(key)) {
         map.set(key, {
           id: key,
-          nombre: o.cliente.nombre,
-          telefono: o.cliente.telefono,
+          nombre: cli.nombre,
+          telefono: cli.telefono,
           ordenes: [o],
           total: totalOrden,
           ultima: o.fecha,
@@ -66,9 +69,10 @@ export default function Clientes() {
         c.ultima = dayjs(o.fecha).isAfter(dayjs(c.ultima)) ? o.fecha : c.ultima
       }
     }
-    // a arreglo
+
     let arr = Array.from(map.values())
-    // filtro por texto
+
+    // filtro por texto (nombre o teléfono)
     if (query.trim()) {
       const q = query.toLowerCase()
       arr = arr.filter(c =>
@@ -76,12 +80,13 @@ export default function Clientes() {
         (c.telefono || '').toLowerCase().includes(q)
       )
     }
+
     // ordenar por última compra desc
     arr.sort((a, b) => dayjs(b.ultima).valueOf() - dayjs(a.ultima).valueOf())
     return arr
-  }, [query])
+  }, [ordenes, query])
 
-  // Ordenes del cliente seleccionado
+  // Órdenes del cliente seleccionado
   const ordenesCliente = React.useMemo(() => {
     if (!clienteSel) return []
     return clienteSel.ordenes
@@ -183,7 +188,7 @@ export default function Clientes() {
                   onClick={() => setOrdenSel(o)}
                 >
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
-                  <TableCell>{o.id}</TableCell>
+                  <TableCell>{o.codigo || o.id}</TableCell>
                   <TableCell align="right">Q {calcTotal(o.items).toFixed(2)}</TableCell>
                 </TableRow>
               ))}
@@ -201,13 +206,14 @@ export default function Clientes() {
         </TableContainer>
       </Stack>
 
-      {/* -------- Dialog Detalle de Orden (igual que en Reportes) -------- */}
+      {/* -------- Dialog Detalle de Orden -------- */}
       <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Orden {ordenSel?.id}</DialogTitle>
+        <DialogTitle>Orden {ordenSel?.codigo || ordenSel?.id}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={1} sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
+              Fecha:{' '}
+              {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Cliente: {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
@@ -219,7 +225,7 @@ export default function Clientes() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Producto</TableCell>
+                <TableCell>Producto / Servicio</TableCell>
                 <TableCell>SKU</TableCell>
                 <TableCell align="right">Precio</TableCell>
                 <TableCell align="right">Cant.</TableCell>
@@ -227,15 +233,38 @@ export default function Clientes() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {ordenSel?.items?.map((it) => (
-                <TableRow key={it.id}>
-                  <TableCell>{it.name}</TableCell>
-                  <TableCell>{it.sku}</TableCell>
-                  <TableCell align="right">Q {it.price.toFixed(2)}</TableCell>
-                  <TableCell align="right">{it.qty}</TableCell>
-                  <TableCell align="right">Q {(it.price * it.qty).toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
+              {ordenSel?.items?.map((it) => {
+                const nombre =
+                  it.nombre ||
+                  it.name ||
+                  (it.producto_id
+                    ? `Producto #${it.producto_id}`
+                    : it.servicio_id
+                    ? `Servicio #${it.servicio_id}`
+                    : `Item ${it.id}`)
+
+                const sku =
+                  it.sku ||
+                  (it.producto_id
+                    ? `PROD-${it.producto_id}`
+                    : it.servicio_id
+                    ? `SERV-${it.servicio_id}`
+                    : '')
+
+                const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
+                const qty = it.cantidad ?? it.qty ?? 1
+                const subtotal = precio * qty
+
+                return (
+                  <TableRow key={it.id}>
+                    <TableCell>{nombre}</TableCell>
+                    <TableCell>{sku}</TableCell>
+                    <TableCell align="right">Q {precio.toFixed(2)}</TableCell>
+                    <TableCell align="right">{qty}</TableCell>
+                    <TableCell align="right">Q {subtotal.toFixed(2)}</TableCell>
+                  </TableRow>
+                )
+              })}
               <TableRow>
                 <TableCell colSpan={4} align="right" sx={{ fontWeight: 600 }}>
                   Total

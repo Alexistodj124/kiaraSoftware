@@ -9,18 +9,62 @@ import Ventas from './pages/Ventas.jsx'
 import Compras from './pages/Compras.jsx'
 import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
+import { RequireAuth, RequireAdmin } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
-      { index: true, element: <Home /> },     // "/"
-      { path: 'signin', element: <SignIn /> }, // "/sign-in"
-      { path: '*', element: <NotFound /> },   // 404
-      { path: 'ventas', element: <Ventas /> }, // "/ventas"
-      { path: 'compras', element: <Compras /> }, // "/compras"
-      { path: 'reportes', element: <Reportes /> }, // "/compras"
-      { path: 'clientes', element: <Clientes /> }, // "/clientes"
+      // Home: puedes dejarla libre o también protegerla
+      {
+        index: true,
+        element: (
+          <RequireAuth>
+            <Home />
+          </RequireAuth>
+        ),
+      },
+
+      // Login SIEMPRE libre
+      { path: 'signin', element: <SignIn /> },
+
+      // Solo logueados (cajeras / usuarias normales)
+      {
+        path: 'ventas',
+        element: (
+          <RequireAuth>
+            <Ventas />
+          </RequireAuth>
+        ),
+      },
+
+      // Solo ADMIN (acceso a todo lo demás)
+      {
+        path: 'compras',
+        element: (
+          <RequireAdmin>
+            <Compras />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'reportes',
+        element: (
+          <RequireAdmin>
+            <Reportes />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'clientes',
+        element: (
+          <RequireAdmin>
+            <Clientes />
+          </RequireAdmin>
+        ),
+      },
+
+      { path: '*', element: <NotFound /> },
     ],
   },
 ])

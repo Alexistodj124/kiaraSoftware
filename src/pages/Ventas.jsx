@@ -3,11 +3,13 @@ import * as React from 'react'
 import {
   Box, Grid, Typography, Divider, List, ListItem, ListItemText,
   IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Stack, Snackbar, Alert, MenuItem
+  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
+import { API_BASE_URL } from '../config/api'
+
 
 const CATEGORIES = [
   { id: 'all', label: 'Todo' },
@@ -38,17 +40,35 @@ const tipoPago = [
   { id: 3, nombre: 'Transferencia' },
 ]
 
+const tipoPOS = [
+  { id: 'all', label: 'Todo' },
+  { id: 'serv', label: 'Servicios' },
+  { id: 'prod', label: 'Productos' },
+]
+
 
 
 export default function Inventory() {
+  const [tipoPOSset, setTipoPOS] = React.useState('all')
   const [category, setCategory] = React.useState('all')
   const [cart, setCart] = React.useState([])
 
   // Dialog de datos del cliente
   const [openDialog, setOpenDialog] = React.useState(false)
-  const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
   const [venta, setVenta] = React.useState({ empleada: '', pago: '' , referencia: ''})
   const [errors, setErrors] = React.useState({ nombre: '', telefono: '' })
+
+  const [categoriasProductos, setCategoriasProductos] = React.useState([])
+  const [categoriasServicios, setCategoriasServicios] = React.useState([])
+  const [productos, setProductos] = React.useState([])
+  const [servicios, setServicios] = React.useState([])
+  const [empleadas, setEmpleadas] = React.useState([])
+
+  const [clientes, setClientes] = React.useState([])          // lista desde el backend
+  const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
+  const [esClienteExistente, setEsClienteExistente] = React.useState(false)
+  const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null)
+
 
   const requiereReferencia =
     venta.pago === 'Tarjeta' || venta.pago === 'Transferencia'
@@ -56,11 +76,138 @@ export default function Inventory() {
   // Snackbar de confirmación
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
 
+  // const filtered = React.useMemo(() => {
+  //   if (categoriasProductos.id === 'all') return productos
+  //   return productos.filter(p => p.categoria_id === categoriasProductos.id)
+  // }, [categoriasProductos.id])
   const filtered = React.useMemo(() => {
-    if (category === 'all') return PRODUCTS
-    return PRODUCTS.filter(p => p.cat === category)
-  }, [category])
+    // Helper para filtrar por categoría
+    const filtrarPorCategoria = (lista) => {
+      if (category === 'all') return lista
+      return lista.filter(item => String(item.categoria_id) === String(category))
+    }
 
+    if (tipoPOSset === 'prod') {
+      // Solo productos
+      return filtrarPorCategoria(productos)
+    }
+
+    if (tipoPOSset === 'serv') {
+      // Solo servicios → los adaptamos al shape del ProductCard
+      const serviciosAdaptados = servicios.map(s => ({
+        ...s,
+        // ProductCard espera `cantidad`, `precio`, `descripcion`, `imagen`
+        cantidad: 9999,              // o 1, si no manejas stock de servicios
+        descripcion: s.descripcion,
+        precio: Number(s.precio),
+        imagen: s.imagen,
+      }))
+      return filtrarPorCategoria(serviciosAdaptados)
+    }
+
+    // tipoPOSset === 'all' → mezclamos ambos
+    const serviciosAdaptados = servicios.map(s => ({
+      ...s,
+      cantidad: 9999,
+      descripcion: s.descripcion,
+      precio: Number(s.precio),
+      imagen: s.imagen,
+    }))
+
+    const listaMixta = [
+      ...productos,
+      ...serviciosAdaptados,
+    ]
+
+    // En "Todo" puedes ignorar category o filtrar igual:
+    return filtrarPorCategoria(listaMixta)
+  }, [tipoPOSset, category, productos, servicios])
+
+
+
+  const cargarCategoriasProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/categorias-productos`)
+      if (!res.ok) throw new Error('Error al obtener categorías de productos')
+      const data = await res.json()
+      // data = [{ id, nombre, descripcion, activo }, ...]
+
+      const mapped = [
+        { id: 'all', label: 'Todas' },
+        ...data.map(cat => ({
+          id: String(cat.id),        // lo pasamos a string por si acaso
+          label: cat.nombre,
+        })),
+      ]
+
+      setCategoriasProductos(mapped)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarCategoriasServicios = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/categorias-servicios`)
+      if (!res.ok) throw new Error('Error al obtener categorías de servicios')
+      const data = await res.json()
+
+      const mapped = [
+        { id: 'all', label: 'Todas' },
+        ...data.map(cat => ({
+          id: String(cat.id),
+          label: cat.nombre,
+        })),
+      ]
+
+      setCategoriasServicios(mapped)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+
+  const cargarProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      setProductos(data) // array de { id, nombre, descripcion, activo }
+      console.log('Producto creado:', data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  const cargarServicios = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/servicios`)
+      if (!res.ok) throw new Error('Error al obtener servicios')
+      const data = await res.json()
+      setServicios(data) // array de { id, nombre, descripcion, activo }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  const cargarClientes = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/clientes`)
+      if (!res.ok) throw new Error('Error al obtener clientes')
+      const data = await res.json()
+      setClientes(data) // array de { id, nombre, descripcion, activo }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  const cargarEmpleadas = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/empleadas`)
+      if (!res.ok) throw new Error('Error al obtener empleadas')
+      const data = await res.json()
+      setEmpleadas(data) // array de { id, nombre, descripcion, activo }
+    } catch (err) {
+      console.error(err)
+    }
+  }
   const addToCart = (prod) => {
     setCart(prev => {
       const existing = prev.find(p => p.id === prod.id)
@@ -71,7 +218,7 @@ export default function Inventory() {
 
   const removeFromCart = (id) => setCart(prev => prev.filter(p => p.id !== id))
 
-  const total = cart.reduce((sum, p) => sum + p.price * p.qty, 0)
+  const total = cart.reduce((sum, p) => sum + p.precio * p.qty, 0)
 
   const handleOpenCheckout = () => {
     if (cart.length === 0) {
@@ -104,27 +251,109 @@ export default function Inventory() {
     return ok
   }
 
-  const handleConfirmCheckout = () => {
+  const handleConfirmCheckout = async () => {
     if (!validate()) return
-
-    // Construye el "pedido"
-    const pedido = {
-      cliente: { ...cliente },
-      items: cart.map(({ id, name, sku, price, qty }) => ({ id, name, sku, price, qty })),
-      total: Number(total.toFixed(2)),
-      fecha: new Date().toISOString(),
+    if (cart.length === 0) {
+      setSnack({ open: true, msg: 'Tu carrito está vacío', severity: 'warning' })
+      return
     }
 
-    // Aquí harías tu POST a la API / guardar en Firestore / etc.
-    console.log('Pedido listo para enviar:', pedido)
+    // 1) Construir cliente en el formato que espera el back
+    // Por ahora asumimos que no tienes cliente.id, solo nombre + telefono
+    const clientePayload = {
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+    }
 
-    // Feedback y clean-up
-    setSnack({ open: true, msg: 'Pedido creado correctamente ✅', severity: 'success' })
-    setOpenDialog(false)
-    setCliente({ nombre: '', telefono: '' })
-    setCart([]) // opcional: vaciar carrito al confirmar
+    // 2) Construir empleada
+    // Si tu venta.empleada es SOLO el nombre (de un dropdown), mandamos eso.
+    const empleadaPayload = {
+      nombre: venta.empleada,    // p.ej. "Ana"
+      // si luego quieres guardar también teléfono, puedes agregarlo aquí
+      // telefono: '...'
+    }
+
+    // 3) Items: por ahora asumimos que TODO lo que vendes aquí son productos
+    const itemsPayload = cart.map((item) => {
+      if (item.cantidad === 9999) {
+        return {
+          tipo: 'servicio',
+          servicio_id: item.id,
+          cantidad: item.qty,
+          precio_unitario: item.precio,
+        }
+      }
+
+      return {
+        tipo: 'producto',
+        producto_id: item.id,
+        cantidad: item.qty,
+        precio_unitario: item.precio,
+      }
+    })
+
+    // 4) Armar el body EXACTO para /ordenes
+    const body = {
+      codigo: `ORD-${Date.now()}`,        // puedes cambiarlo por tu lógica de código
+      fecha: new Date().toISOString(),
+      cliente: clientePayload,
+      empleada: empleadaPayload,
+      items: itemsPayload,
+    }
+
+    console.log('Payload para /ordenes:', body)
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('Error al crear orden:', errorText)
+        setSnack({
+          open: true,
+          msg: 'Error al crear la orden ❌',
+          severity: 'error',
+        })
+        return
+      }
+
+      const data = await res.json()
+      console.log('Orden creada en backend:', data)
+
+      // Feedback y clean-up SOLO si todo salió bien
+      setSnack({
+        open: true,
+        msg: 'Pedido creado correctamente ✅',
+        severity: 'success',
+      })
+      setOpenDialog(false)
+      setCliente({ nombre: '', telefono: '' })
+      setCart([])
+
+    } catch (err) {
+      console.error('Error de red al crear orden:', err)
+      setSnack({
+        open: true,
+        msg: 'Error de conexión al crear la orden ❌',
+        severity: 'error',
+      })
+    }
   }
 
+  React.useEffect(() => {
+      cargarCategoriasProductos()
+      cargarCategoriasServicios()
+      cargarProductos()
+      cargarServicios()
+      cargarClientes()
+      cargarEmpleadas()
+    }, [])
   return (
     <Box sx={{ display: 'flex', gap: 2 }}>
       {/* -------- IZQUIERDA: INVENTARIO -------- */}
@@ -134,15 +363,38 @@ export default function Inventory() {
         </Typography>
 
         <CategoryBar
-          categories={CATEGORIES}
-          selected={category}
-          onSelect={setCategory}
+          categories={tipoPOS}
+          selected={tipoPOSset}
+          onSelect={setTipoPOS}
         />
-
-        <Grid container spacing={2}>
+        {tipoPOSset == "prod" && (
+          <CategoryBar
+            categories={categoriasProductos}
+            selected={category}
+            onSelect={setCategory}
+          />
+        )}
+        {tipoPOSset == "serv" && (
+          <CategoryBar
+            categories={categoriasServicios}
+            selected={category}
+            onSelect={setCategory}
+          />
+        )}
+        <Grid container spacing={2} alignItems="stretch">
           {filtered.map(prod => (
-            <Grid key={prod.id} item xs={6} sm={4} md={3}>
-              <ProductCard product={prod} onClick={() => addToCart(prod)} />
+            <Grid
+              key={prod.id}
+              item
+              xs={6}
+              sm={4}
+              md={3}
+              sx={{ display: 'flex' }}          // 🔹 todos los items son flex
+            >
+              <ProductCard
+                product={prod}
+                onClick={() => addToCart(prod)}
+              />
             </Grid>
           ))}
           {filtered.length === 0 && (
@@ -151,6 +403,7 @@ export default function Inventory() {
             </Grid>
           )}
         </Grid>
+
       </Box>
 
       {/* -------- DERECHA: CARRITO -------- */}
@@ -184,8 +437,8 @@ export default function Inventory() {
                 }
               >
                 <ListItemText
-                  primary={`${item.name}`}
-                  secondary={`Q ${item.price.toFixed(2)} x ${item.qty}`}
+                  primary={`${item.descripcion}`}
+                  secondary={`Q ${item.precio.toFixed(2)} x ${item.qty}`}
                 />
               </ListItem>
             ))}
@@ -221,25 +474,75 @@ export default function Inventory() {
         <DialogTitle>Datos del cliente</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              autoFocus
-              label="Nombre completo"
-              value={cliente.nombre}
-              onChange={(e) => setCliente(prev => ({ ...prev, nombre: e.target.value }))}
-              error={!!errors.nombre}
-              helperText={errors.nombre}
+            <Autocomplete
               fullWidth
+              freeSolo                          // permite escribir valores no existentes
+              options={clientes}                // [{ id, nombre, telefono }, ...]
+              getOptionLabel={(option) =>
+                typeof option === 'string' ? option : option.nombre
+              }
+              value={esClienteExistente ? clienteSeleccionado : null}
+              inputValue={cliente.nombre}
+              onInputChange={(event, newInputValue) => {
+                // cuando el usuario escribe
+                setCliente(prev => ({ ...prev, nombre: newInputValue }))
+                setClienteSeleccionado(null)
+                setEsClienteExistente(false)
+                // si quieres, limpiar tel cuando cambia el nombre:
+                setCliente(prev => ({ ...prev, telefono: '' }))
+              }}
+              onChange={(event, newValue) => {
+                // cuando selecciona algo del dropdown o “confirma” texto
+                if (!newValue) {
+                  // limpiaron el campo
+                  setClienteSeleccionado(null)
+                  setEsClienteExistente(false)
+                  setCliente(prev => ({ ...prev, telefono: '' }))
+                  return
+                }
+
+                if (typeof newValue === 'string') {
+                  // nombre escrito a mano, no de la lista
+                  setCliente(prev => ({ ...prev, nombre: newValue }))
+                  setClienteSeleccionado(null)
+                  setEsClienteExistente(false)
+                  return
+                }
+
+                // aquí sí es un cliente de la lista
+                setClienteSeleccionado(newValue)
+                setCliente({
+                  nombre: newValue.nombre,
+                  telefono: newValue.telefono ?? '',
+                })
+                setEsClienteExistente(true)
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  autoFocus
+                  label="Nombre completo"
+                  error={!!errors.nombre}
+                  helperText={errors.nombre}
+                />
+              )}
             />
-            <TextField
-              label="Número de teléfono"
-              value={cliente.telefono}
-              onChange={(e) => setCliente(prev => ({ ...prev, telefono: e.target.value }))}
-              error={!!errors.telefono}
-              helperText={errors.telefono}
-              fullWidth
-              inputMode="tel"
-              placeholder="+502 5555 5555"
-            />
+
+            {!esClienteExistente && (
+              <TextField
+                label="Número de teléfono"
+                value={cliente.telefono}
+                onChange={(e) =>
+                  setCliente(prev => ({ ...prev, telefono: e.target.value }))
+                }
+                error={!!errors.telefono}
+                helperText={errors.telefono}
+                fullWidth
+                inputMode="tel"
+                placeholder="+502 5555 5555"
+              />
+            )}
+
             <TextField
               autoFocus
               select

@@ -8,6 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
+import { API_BASE_URL } from '../config/api'
 dayjs.extend(isBetween)
 
 // --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
@@ -42,11 +43,6 @@ const ORDENES = [
     empleada: 'Lucía',
   },
 ]
-const empleadas = [
-  { id: 1, nombre: 'Ana' },
-  { id: 2, nombre: 'María' },
-  { id: 3, nombre: 'Lucía' },
-]
 
 // Util: calcular total
 function calcTotal(items) {
@@ -54,41 +50,96 @@ function calcTotal(items) {
 }
 
 export default function Reportes() {
-  const [range, setRange] = React.useState([dayjs().startOf('month'), dayjs().endOf('day')])
   const [ordenSel, setOrdenSel] = React.useState(null)
-  const [empleada, setEmpleada] = React.useState('');
+  const [empleadas, setEmpleadas] = React.useState([])
+  const [ordenes, setOrdenes] = React.useState([])
+  const [empleadaSel, setEmpleadaSel] = React.useState('')
+    const [range, setRange] = React.useState([
+    dayjs().startOf('month'),
+    dayjs().endOf('day'),
+  ])
 
   const filtered = React.useMemo(() => {
-    const [from, to] = range
-    if (!from || !to) return ORDENES
+    // si aún no hay órdenes del backend, usa los mocks
+    const source = ordenes.length ? ordenes : ORDENES
 
-    return ORDENES.filter(o => {
-      const d = dayjs(o.fecha)
+    // Filtro por empleada seleccionada
+    if (!empleadaSel) return source
 
-      const dentroDeRango = d.isBetween(
-        from.startOf('day'),
-        to.endOf('day'),
-        'millisecond',
-        '[]' // inclusivo
-      )
+    return source.filter(o => {
+      // en mocks: o.empleada es string
+      // en backend: o.empleada es { id, nombre, telefono }
+      const nombreEmp = typeof o.empleada === 'string'
+        ? o.empleada
+        : o.empleada?.nombre
 
-      const coincideEmpleada =
-        !empleada || o.empleada === empleada   // 👈 si no hay empleada seleccionada, muestra todas
-
-      return dentroDeRango && coincideEmpleada
+      return nombreEmp === empleadaSel
     })
-  }, [range, empleada])   // 👈 agrega empleada como dependencia
+  }, [ordenes, empleadaSel])
+
+  // 🔹 GET /ordenes?inicio=...&fin=...
+  const cargarOrdenes = async (inicioIso, finIso) => {
+    try {
+      const params = new URLSearchParams()
+      if (inicioIso) params.append('inicio', inicioIso)
+      if (finIso)    params.append('fin',    finIso)
+
+      const res = await fetch(`${API_BASE_URL}/ordenes?${params.toString()}`)
+      if (!res.ok) throw new Error('Error al obtener órdenes')
+
+      const data = await res.json()
+      setOrdenes(data)   // array de ordenes desde el back
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarEmpleadas = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/empleadas`)
+      if (!res.ok) throw new Error('Error al obtener empleadas')
+      const data = await res.json()
+      setEmpleadas(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  function calcTotal(items) {
+    return items.reduce((s, it) => {
+      const price = it.price ?? it.precio_unitario ?? 0   // mock vs backend
+      const qty   = it.qty   ?? it.cantidad       ?? 1
+      return s + price * qty
+    }, 0)
+  }
 
 
-  const totalPeriodo = filtered.reduce((acc, o) => acc + calcTotal(o.items), 0)
+  const totalPeriodo = filtered.reduce(
+    (acc, o) => acc + calcTotal(o.items || []),
+    0
+  )
 
   const [porcentajeComision, setPorcentajeComision] = React.useState(0);
 
   const totalComision = React.useMemo(
     () => (porcentajeComision ? (totalPeriodo * porcentajeComision) / 100 : 0),
     [totalPeriodo, porcentajeComision]
-  );
+  )
 
+    // 🔹 Cargar empleadas una vez
+  React.useEffect(() => {
+    cargarEmpleadas()
+  }, [])
+
+  // 🔹 Cada vez que cambia el rango, pedir órdenes al backend
+  React.useEffect(() => {
+    const [from, to] = range
+    if (!from || !to) return
+
+    const inicioIso = from.startOf('day').toDate().toISOString()
+    const finIso    = to.endOf('day').toDate().toISOString()
+
+    cargarOrdenes(inicioIso, finIso)
+  }, [range])
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -137,8 +188,8 @@ export default function Reportes() {
               select
               label="Empleada"
               size="small"
-              value={empleada}
-              onChange={(e) => setEmpleada(e.target.value)}
+              value={empleadaSel}
+              onChange={(e) => setEmpleadaSel(e.target.value)}
               fullWidth
             >
               <MenuItem value="">
@@ -146,11 +197,12 @@ export default function Reportes() {
               </MenuItem>
 
               {empleadas.map((emp) => (
-                <MenuItem key={emp.id} value={emp.nombre}>  {/* 👈 ahora usa el nombre */}
+                <MenuItem key={emp.id} value={emp.nombre}>
                   {emp.nombre}
                 </MenuItem>
               ))}
             </TextField>
+
 
 
             {/* Porcentaje comisión */}
@@ -198,9 +250,11 @@ export default function Reportes() {
                   onClick={() => setOrdenSel(o)}
                 >
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
-                  <TableCell>{o.id}</TableCell>
+                  <TableCell>{o.codigo ?? o.id}</TableCell>
                   <TableCell>{o.cliente?.nombre}</TableCell>
-                  <TableCell align="right">Q {calcTotal(o.items).toFixed(2)}</TableCell>
+                  <TableCell align="right">
+                    Q {calcTotal(o.items || []).toFixed(2)}
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
@@ -213,6 +267,7 @@ export default function Reportes() {
                 </TableRow>
               )}
             </TableBody>
+
           </Table>
         </TableContainer>
 
@@ -242,15 +297,52 @@ export default function Reportes() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {ordenSel?.items?.map((it) => (
-                  <TableRow key={it.id}>
-                    <TableCell>{it.name}</TableCell>
-                    <TableCell>{it.sku}</TableCell>
-                    <TableCell align="right">Q {it.price.toFixed(2)}</TableCell>
-                    <TableCell align="right">{it.qty}</TableCell>
-                    <TableCell align="right">Q {(it.price * it.qty).toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
+                {ordenSel?.items?.map((it) => {
+                  let nombre = ''
+                  if (it.tipo === 'servicio') {
+                    nombre =
+                      it.servicio?.descripcion ||
+                      it.nombre ||
+                      `Servicio #${it.servicio_id ?? it.id}`
+                  } else { // asumimos 'producto'
+                    nombre =
+                      it.producto?.descripcion ||
+                      it.nombre ||
+                      `Producto #${it.producto_id ?? it.id}`
+                  }
+
+                  // 🔹 SKU según tipo
+                  let sku = ''
+                  if (it.tipo === 'servicio') {
+                    sku =
+                      it.sku ||
+                      (it.servicio_id ? `SERV-${it.servicio_id}` : '')
+                  } else {
+                    sku =
+                      it.sku ||
+                      (it.producto_id ? `PROD-${it.producto_id}` : '')
+                  }
+
+                  const price =
+                    it.price ??                        // mock
+                    it.precio_unitario ??              // backend snapshot
+                    it.producto?.precio ??             // por si usas precio del producto
+                    it.servicio?.precio ?? 0
+
+                  const qty = it.qty ?? it.cantidad ?? 1
+
+                  return (
+                    <TableRow key={it.id}>
+                      <TableCell>{nombre}</TableCell>
+                      <TableCell>{sku}</TableCell>
+                      <TableCell align="right">Q {price.toFixed(2)}</TableCell>
+                      <TableCell align="right">{qty}</TableCell>
+                      <TableCell align="right">Q {(price * qty).toFixed(2)}</TableCell>
+                    </TableRow>
+                  )
+                })}
+
+
                 <TableRow>
                   <TableCell colSpan={4} align="right" sx={{ fontWeight: 600 }}>
                     Total
