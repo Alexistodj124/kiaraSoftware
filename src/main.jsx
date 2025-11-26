@@ -16,7 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <CssBaseline />
-      <RouterProvider router={router} />
+      <RouterProvider router={router} basename="/kiara" />
     </AuthProvider>
   </React.StrictMode>
 )
