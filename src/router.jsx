@@ -67,6 +67,10 @@ const router = createBrowserRouter([
       { path: '*', element: <NotFound /> },
     ],
   },
-])
+],
+{
+  basename: "/kiara",
+}
+);
 
 export default router
