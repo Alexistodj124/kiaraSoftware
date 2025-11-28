@@ -238,6 +238,7 @@ export default function Reportes() {
                 <TableCell>Fecha</TableCell>
                 <TableCell>No. Orden</TableCell>
                 <TableCell>Cliente</TableCell>
+                <TableCell>Metodo de Pago</TableCell>
                 <TableCell align="right">Total</TableCell>
               </TableRow>
             </TableHead>
@@ -252,6 +253,7 @@ export default function Reportes() {
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
                   <TableCell>{o.codigo ?? o.id}</TableCell>
                   <TableCell>{o.cliente?.nombre}</TableCell>
+                  <TableCell>{o.metodo_pago ?? 'N/A'}</TableCell>
                   <TableCell align="right">
                     Q {calcTotal(o.items || []).toFixed(2)}
                   </TableCell>
