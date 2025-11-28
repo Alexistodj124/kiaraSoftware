@@ -18,11 +18,13 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function ProductCard({ product, onClick, onDeleted, onUpdated }) {
   const { id, descripcion, precio, cantidad, imagen } = product
   const low = cantidad <= 5
   const esServicio = cantidad === 9999
+  const { isAdmin } = useAuth()
   const [editOpen, setEditOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
@@ -87,6 +89,7 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
   const descFormateada = wrapDescription(descripcion, 15, 5)
 
   const handleDelete = async (event) => {
+    if (!isAdmin) return
     event.stopPropagation()
     if (deleting) return
     const confirmed = window.confirm('A�Eliminar este producto?')
@@ -106,6 +109,7 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
   }
 
   const handleSave = async () => {
+    if (!isAdmin) return
     if (saving) return
     try {
       setSaving(true)
@@ -262,92 +266,96 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
         </Box>
       </CardActionArea>
 
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          display: 'flex',
-          gap: 0.5,
-        }}
-      >
-        <IconButton
-          size="small"
-          color="primary"
-          onClick={(e) => {
-            e.stopPropagation()
-            setEditOpen(true)
-          }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          color="error"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-      </Box>
-
-      <Dialog
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Editar producto</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label="SKU"
-              value={form.sku}
-              onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))}
-              fullWidth
-            />
-            <TextField
-              label="DescripciA3n"
-              value={form.descripcion}
-              onChange={(e) => setForm((prev) => ({ ...prev, descripcion: e.target.value }))}
-              fullWidth
-              multiline
-              minRows={2}
-            />
-            <TextField
-              label="Costo"
-              type="number"
-              value={form.costo}
-              onChange={(e) => setForm((prev) => ({ ...prev, costo: e.target.value }))}
-              fullWidth
-            />
-            <TextField
-              label="Precio"
-              type="number"
-              value={form.precio}
-              onChange={(e) => setForm((prev) => ({ ...prev, precio: e.target.value }))}
-              fullWidth
-            />
-            <TextField
-              label="Cantidad"
-              type="number"
-              value={form.cantidad}
-              onChange={(e) => setForm((prev) => ({ ...prev, cantidad: e.target.value }))}
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={saving}
+      {isAdmin && (
+        <>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              display: 'flex',
+              gap: 0.5,
+            }}
           >
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={(e) => {
+                e.stopPropagation()
+                setEditOpen(true)
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              color="error"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Dialog
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle>Editar producto</DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ pt: 1 }}>
+                <TextField
+                  label="SKU"
+                  value={form.sku}
+                  onChange={(e) => setForm((prev) => ({ ...prev, sku: e.target.value }))}
+                  fullWidth
+                />
+                <TextField
+                  label="DescripciA3n"
+                  value={form.descripcion}
+                  onChange={(e) => setForm((prev) => ({ ...prev, descripcion: e.target.value }))}
+                  fullWidth
+                  multiline
+                  minRows={2}
+                />
+                <TextField
+                  label="Costo"
+                  type="number"
+                  value={form.costo}
+                  onChange={(e) => setForm((prev) => ({ ...prev, costo: e.target.value }))}
+                  fullWidth
+                />
+                <TextField
+                  label="Precio"
+                  type="number"
+                  value={form.precio}
+                  onChange={(e) => setForm((prev) => ({ ...prev, precio: e.target.value }))}
+                  fullWidth
+                />
+                <TextField
+                  label="Cantidad"
+                  type="number"
+                  value={form.cantidad}
+                  onChange={(e) => setForm((prev) => ({ ...prev, cantidad: e.target.value }))}
+                  fullWidth
+                />
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                Guardar
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </Card>
   )
 }
