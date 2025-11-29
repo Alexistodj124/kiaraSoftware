@@ -63,6 +63,7 @@ export default function Inventory() {
   const [productos, setProductos] = React.useState([])
   const [servicios, setServicios] = React.useState([])
   const [empleadas, setEmpleadas] = React.useState([])
+  const [descuentoPct, setDescuentoPct] = React.useState('0')
 
   const [clientes, setClientes] = React.useState([])          // lista desde el backend
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
@@ -228,7 +229,10 @@ export default function Inventory() {
 
   const removeFromCart = (lineKey) => setCart(prev => prev.filter(p => p.lineKey !== lineKey))
 
-  const total = cart.reduce((sum, p) => sum + p.precio * p.qty, 0)
+  const subtotal = cart.reduce((sum, p) => sum + p.precio * p.qty, 0)
+  const pctNumber = Math.min(100, Math.max(0, parseFloat(descuentoPct) || 0))
+  const descuentoQ = subtotal * (pctNumber / 100)
+  const totalConDescuento = Math.max(0, subtotal - descuentoQ)
 
   const handleOpenCheckout = () => {
     if (cart.length === 0) {
@@ -309,6 +313,8 @@ export default function Inventory() {
       cliente: clientePayload,
       empleada: empleadaPayload,
       items: itemsPayload,
+      descuento: descuentoQ,
+      total: totalConDescuento,
     }
 
     console.log('Payload para /ordenes:', body)
@@ -464,8 +470,23 @@ export default function Inventory() {
         <Divider sx={{ mt: 1, mb: 2 }} />
 
         <Box sx={{ textAlign: 'right' }}>
+          <TextField
+            label="Descuento (%)"
+            type="number"
+            value={descuentoPct}
+            onChange={(e) => setDescuentoPct(e.target.value)}
+            inputProps={{ min: 0, max: 100 }}
+            size="small"
+            sx={{ mb: 1, width: 180 }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            Subtotal: Q {subtotal.toFixed(2)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Descuento: Q {descuentoQ.toFixed(2)} ({pctNumber.toFixed(0)}%)
+          </Typography>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Total: Q {total.toFixed(2)}
+            Total: Q {totalConDescuento.toFixed(2)}
           </Typography>
           <Button
             variant="contained"
