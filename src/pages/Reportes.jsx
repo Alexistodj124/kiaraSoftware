@@ -11,39 +11,6 @@ import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
 dayjs.extend(isBetween)
 
-// --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
-const ORDENES = [
-  {
-    id: 'ORD-001',
-    fecha: '2025-11-10T10:10:00Z',
-    cliente: { nombre: 'Ana López', telefono: '+502 5555 1111' },
-    items: [
-      { id: 1, name: 'Shampoo pH Neutro 1L', sku: 'SH-001', price: 89.9, qty: 1 },
-      { id: 2, name: 'Toalla Secado 1200gsm', sku: 'TS-1200', price: 99.0, qty: 2 },
-    ],
-    empleada: 'Ana',
-  },
-  {
-    id: 'ORD-002',
-    fecha: '2025-11-11T16:40:00Z',
-    cliente: { nombre: 'Carlos Méndez', telefono: '+502 5555 2222' },
-    items: [
-      { id: 3, name: 'Cera Sintética 500ml', sku: 'CE-500', price: 129.0, qty: 1 },
-    ],
-    empleada: 'María',
-  },
-  {
-    id: 'ORD-003',
-    fecha: '2025-11-12T03:20:00Z',
-    cliente: { nombre: 'María Díaz', telefono: '+502 5555 3333' },
-    items: [
-      { id: 4, name: 'Guante Microfibra Premium', sku: 'GM-010', price: 59.5, qty: 3 },
-      { id: 5, name: 'Ambientador New Car', sku: 'AN-001', price: 25.0, qty: 2 },
-    ],
-    empleada: 'Lucía',
-  },
-]
-
 // Util: calcular total
 function calcTotal(items) {
   return items.reduce((s, it) => s + it.price * it.qty, 0)
@@ -54,28 +21,31 @@ export default function Reportes() {
   const [empleadas, setEmpleadas] = React.useState([])
   const [ordenes, setOrdenes] = React.useState([])
   const [empleadaSel, setEmpleadaSel] = React.useState('')
-    const [range, setRange] = React.useState([
+  const [tipoItemFiltro, setTipoItemFiltro] = React.useState('')
+  const [range, setRange] = React.useState([
     dayjs().startOf('month'),
     dayjs().endOf('day'),
   ])
 
   const filtered = React.useMemo(() => {
-    // si aún no hay órdenes del backend, usa los mocks
-    const source = ordenes.length ? ordenes : ORDENES
+    const porOrden = ordenes.map((o) => {
+      const itemsFiltrados = (o.items || []).filter((it) => {
+        const nombreEmp =
+          typeof it.empleada === 'string'
+            ? it.empleada
+            : it.empleada?.nombre
 
-    // Filtro por empleada seleccionada
-    if (!empleadaSel) return source
+        const pasaEmpleada = !empleadaSel || nombreEmp === empleadaSel
+        const pasaTipo = !tipoItemFiltro || it.tipo === tipoItemFiltro
+        return pasaEmpleada && pasaTipo
+      })
 
-    return source.filter(o => {
-      // en mocks: o.empleada es string
-      // en backend: o.empleada es { id, nombre, telefono }
-      const nombreEmp = typeof o.empleada === 'string'
-        ? o.empleada
-        : o.empleada?.nombre
+      if (!itemsFiltrados.length) return null
+      return { ...o, items: itemsFiltrados }
+    }).filter(Boolean)
 
-      return nombreEmp === empleadaSel
-    })
-  }, [ordenes, empleadaSel])
+    return porOrden
+  }, [ordenes, empleadaSel, tipoItemFiltro])
 
   // 🔹 GET /ordenes?inicio=...&fin=...
   const cargarOrdenes = async (inicioIso, finIso) => {
@@ -117,6 +87,29 @@ export default function Reportes() {
     (acc, o) => acc + calcTotal(o.items || []),
     0
   )
+  const totalCostos = filtered.reduce((acc, o) => {
+    const costoItems = (o.items || []).reduce((s, it) => {
+      const costoUnit =
+        it.cost ??
+        it.costo ??
+        it.producto?.costo ??
+        it.servicio?.costo ??
+        0
+      const qty = it.qty ?? it.cantidad ?? 1
+      return s + costoUnit * qty
+    }, 0)
+    return acc + costoItems
+  }, 0)
+
+  const totalDescuentos = filtered.reduce(
+    (acc, o) => acc + (o.descuento ?? 0),
+    0
+  )
+
+  const gananciaNeta =
+    !empleadaSel && !tipoItemFiltro
+      ? totalPeriodo - totalCostos - totalDescuentos
+      : null
 
   const [porcentajeComision, setPorcentajeComision] = React.useState(0);
 
@@ -203,6 +196,20 @@ export default function Reportes() {
               ))}
             </TextField>
 
+            {/* Filtro por tipo de item */}
+            <TextField
+              select
+              label="Tipo de item"
+              size="small"
+              value={tipoItemFiltro}
+              onChange={(e) => setTipoItemFiltro(e.target.value)}
+              fullWidth
+            >
+              <MenuItem value="">Productos y servicios</MenuItem>
+              <MenuItem value="producto">Productos</MenuItem>
+              <MenuItem value="servicio">Servicios</MenuItem>
+            </TextField>
+
 
 
             {/* Porcentaje comisión */}
@@ -226,6 +233,15 @@ export default function Reportes() {
             <Chip
               label={`Total comisión: Q ${totalComision.toFixed(2)}`}
               color="secondary"
+              sx={{ fontWeight: 600 }}
+            />
+
+            {/* Ganancia neta (solo sin filtros) */}
+            <Chip
+              label={gananciaNeta !== null
+                ? `Ganancia neta: Q ${gananciaNeta.toFixed(2)}`
+                : 'Ganancia neta solo sin filtros'}
+              color={gananciaNeta !== null ? 'success' : 'default'}
               sx={{ fontWeight: 600 }}
             />
           </Stack>
