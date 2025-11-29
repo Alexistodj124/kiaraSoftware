@@ -22,8 +22,8 @@ import { useAuth } from '../context/AuthContext'
 
 export default function ProductCard({ product, onClick, onDeleted, onUpdated }) {
   const { id, descripcion, precio, cantidad, imagen } = product
-  const low = cantidad <= 5
   const esServicio = product?.esServicio || product?.tipo === 'servicio' || cantidad === 9999
+  const low = !esServicio && cantidad <= 5
   const { isAdmin } = useAuth()
   const [editOpen, setEditOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -46,7 +46,7 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
     })
   }, [product])
 
-  const wrapDescription = (text, maxCharsPerLine, maxLines) => {
+  const wrapDescription = (text, maxCharsPerLine, maxLines, addEllipsis = true) => {
     if (!text) return ''
 
     const words = text.split(' ')
@@ -79,14 +79,16 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
     // si quedaron palabras sin meter, aA�adimos "�?�"
     const totalLength = text.length
     const joined = lines.join(' ')
-    if (totalLength > joined.length) {
+    if (addEllipsis && totalLength > joined.length) {
       lines[lines.length - 1] = lines[lines.length - 1] + '�?�'
     }
 
     return lines.join('\n')
   }
 
-  const descFormateada = wrapDescription(descripcion, 15, 5)
+  const descFormateada = esServicio
+    ? wrapDescription(descripcion, 40, 10, false)
+    : wrapDescription(descripcion, 15, 5)
 
   const handleDelete = async (event) => {
     if (!isAdmin) return
@@ -175,52 +177,54 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
         onClick={onClick}
         sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
       >
-        {/* Imagen con altura fija */}
-        <Box
-          sx={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderBottom: 1,
-            borderColor: 'divider',
-            height: 140,                 // dY"1 todas las imA�genes misma altura
-            width: 150,
-          }}
-        >
-          {imagen ? (
-            <Box
-              component="img"
-              alt={descripcion}
-              src={imagen}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-          ) : (
-            <Box
-              sx={{
-                width: '100%',
-                height: '100%',
-                display: 'grid',
-                placeItems: 'center',
-                bgcolor: 'action.hover',
-              }}
-            >
-              <Typography variant="overline" color="text.secondary">
-                SIN IMAGEN
-              </Typography>
-            </Box>
-          )}
+        {!esServicio && (
+          // Imagen con altura fija para productos
+          <Box
+            sx={{
+              position: 'relative',
+              overflow: 'hidden',
+              borderBottom: 1,
+              borderColor: 'divider',
+              height: 140,                 // dY"1 todas las imA�genes misma altura
+              width: 150,
+            }}
+          >
+            {imagen ? (
+              <Box
+                component="img"
+                alt={descripcion}
+                src={imagen}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Typography variant="overline" color="text.secondary">
+                  SIN IMAGEN
+                </Typography>
+              </Box>
+            )}
 
-          <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
-            <Chip
-              size="small"
-              label={low ? 'Bajo stock' : 'En stock'}
-              color={low ? 'warning' : 'success'}
-            />
+            <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
+              <Chip
+                size="small"
+                label={low ? 'Bajo stock' : 'En stock'}
+                color={low ? 'warning' : 'success'}
+              />
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {/* Texto */}
         <Box
@@ -230,11 +234,18 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
+            ...(esServicio && {
+              width: '100%',
+              mt: isAdmin ? 4 : 1, // separa el texto de los botones flotantes
+            }),
           }}
         >
           <Typography
             variant="subtitle2"
-            sx={{ whiteSpace: 'pre-line' }}   // respeta el "\n"
+            sx={{
+              whiteSpace: 'pre-line',   // respeta el "\n"
+              ...(esServicio && { display: 'block' }),
+            }}
             title={descripcion}
           >
             {descFormateada}
