@@ -23,7 +23,7 @@ import { useAuth } from '../context/AuthContext'
 export default function ProductCard({ product, onClick, onDeleted, onUpdated }) {
   const { id, descripcion, precio, cantidad, imagen } = product
   const low = cantidad <= 5
-  const esServicio = cantidad === 9999
+  const esServicio = product?.esServicio || product?.tipo === 'servicio' || cantidad === 9999
   const { isAdmin } = useAuth()
   const [editOpen, setEditOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -95,10 +95,12 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
     const confirmed = window.confirm('A�Eliminar este producto?')
     if (!confirmed) return
 
+    const resource = esServicio ? 'servicios' : 'productos'
+
     try {
       setDeleting(true)
-      const res = await fetch(`${API_BASE_URL}/productos/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Error al eliminar producto')
+      const res = await fetch(`${API_BASE_URL}/${resource}/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar item')
       onDeleted?.(id)
       window.location.reload()
     } catch (err) {
@@ -113,20 +115,33 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
     if (saving) return
     try {
       setSaving(true)
-      const payload = {
-        sku: form.sku || null,
-        descripcion: form.descripcion,
-        precio: Number(form.precio) || 0,
-        costo: Number(form.costo) || 0,
-        cantidad: Number(form.cantidad) || 0,
-        tienda_id: product.tienda_id ?? null,
-        marca_id: product.marca_id ?? null,
-        categoria_id: product.categoria_id ?? null,
-        talla_id: product.talla_id ?? null,
-        imagen: product.imagen ?? null,
-      }
+      const payload = esServicio
+        ? {
+            descripcion: form.descripcion,
+            precio: Number(form.precio) || 0,
+            costo: Number(form.costo) || 0,
+            categoria_id:
+              product.categoria_id !== undefined && product.categoria_id !== null
+                ? Number(product.categoria_id)
+                : null,
+            imagen: product.imagen ?? null,
+          }
+        : {
+            sku: form.sku || null,
+            descripcion: form.descripcion,
+            precio: Number(form.precio) || 0,
+            costo: Number(form.costo) || 0,
+            cantidad: Number(form.cantidad) || 0,
+            tienda_id: product.tienda_id ?? null,
+            marca_id: product.marca_id ?? null,
+            categoria_id: product.categoria_id ?? null,
+            talla_id: product.talla_id ?? null,
+            imagen: product.imagen ?? null,
+          }
 
-      const res = await fetch(`${API_BASE_URL}/productos/${id}`, {
+      const resource = esServicio ? 'servicios' : 'productos'
+
+      const res = await fetch(`${API_BASE_URL}/${resource}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
