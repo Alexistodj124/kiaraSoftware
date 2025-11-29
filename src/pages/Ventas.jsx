@@ -10,6 +10,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 
 const CATEGORIES = [
@@ -50,6 +51,7 @@ const tipoPOS = [
 
 
 export default function Inventory() {
+  const { isAdmin } = useAuth() || {}
   const [tipoPOSset, setTipoPOS] = React.useState('all')
   const [category, setCategory] = React.useState('all')
   const [cart, setCart] = React.useState([])
@@ -75,6 +77,12 @@ export default function Inventory() {
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
   const [esClienteExistente, setEsClienteExistente] = React.useState(false)
   const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null)
+
+  React.useEffect(() => {
+    if (!isAdmin) {
+      setDescuentoPct('0')
+    }
+  }, [isAdmin])
 
 
   const requiereReferencia =
@@ -528,15 +536,17 @@ export default function Inventory() {
         <Divider sx={{ mt: 1, mb: 2 }} />
 
         <Box sx={{ textAlign: 'right' }}>
-          <TextField
-            label="Descuento (%)"
-            type="number"
-            value={descuentoPct}
-            onChange={(e) => setDescuentoPct(e.target.value)}
-            inputProps={{ min: 0, max: 100 }}
-            size="small"
-            sx={{ mb: 1, width: 180 }}
-          />
+          {isAdmin && (
+            <TextField
+              label="Descuento (%)"
+              type="number"
+              value={descuentoPct}
+              onChange={(e) => setDescuentoPct(e.target.value)}
+              inputProps={{ min: 0, max: 100 }}
+              size="small"
+              sx={{ mb: 1, width: 180 }}
+            />
+          )}
           <Typography variant="body2" color="text.secondary">
             Subtotal: Q {subtotal.toFixed(2)}
           </Typography>
