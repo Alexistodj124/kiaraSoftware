@@ -81,6 +81,23 @@ export default function Inventory() {
   //   return productos.filter(p => p.categoria_id === categoriasProductos.id)
   // }, [categoriasProductos.id])
   const filtered = React.useMemo(() => {
+    const productosAdaptados = productos.map(p => ({
+      ...p,
+      tipo: 'producto',
+      esServicio: false,
+    }))
+
+    const serviciosAdaptados = servicios.map(s => ({
+      ...s,
+      tipo: 'servicio',
+      esServicio: true,
+      // ProductCard espera `cantidad`, `precio`, `descripcion`, `imagen`
+      cantidad: 9999,              // o 1, si no manejas stock de servicios
+      descripcion: s.descripcion,
+      precio: Number(s.precio),
+      imagen: s.imagen,
+    }))
+
     // Helper para filtrar por categoría
     const filtrarPorCategoria = (lista) => {
       if (category === 'all') return lista
@@ -89,33 +106,17 @@ export default function Inventory() {
 
     if (tipoPOSset === 'prod') {
       // Solo productos
-      return filtrarPorCategoria(productos)
+      return filtrarPorCategoria(productosAdaptados)
     }
 
     if (tipoPOSset === 'serv') {
       // Solo servicios → los adaptamos al shape del ProductCard
-      const serviciosAdaptados = servicios.map(s => ({
-        ...s,
-        // ProductCard espera `cantidad`, `precio`, `descripcion`, `imagen`
-        cantidad: 9999,              // o 1, si no manejas stock de servicios
-        descripcion: s.descripcion,
-        precio: Number(s.precio),
-        imagen: s.imagen,
-      }))
       return filtrarPorCategoria(serviciosAdaptados)
     }
 
     // tipoPOSset === 'all' → mezclamos ambos
-    const serviciosAdaptados = servicios.map(s => ({
-      ...s,
-      cantidad: 9999,
-      descripcion: s.descripcion,
-      precio: Number(s.precio),
-      imagen: s.imagen,
-    }))
-
     const listaMixta = [
-      ...productos,
+      ...productosAdaptados,
       ...serviciosAdaptados,
     ]
 
@@ -208,15 +209,24 @@ export default function Inventory() {
       console.error(err)
     }
   }
+
+  const getItemKey = (item) => {
+    const tipo = item.tipo || (item.esServicio ? 'servicio' : 'producto')
+    return `${tipo}-${item.id}`
+  }
+
   const addToCart = (prod) => {
     setCart(prev => {
-      const existing = prev.find(p => p.id === prod.id)
-      if (existing) return prev.map(p => p.id === prod.id ? { ...p, qty: p.qty + 1 } : p)
-      return [...prev, { ...prod, qty: 1 }]
+      const key = getItemKey(prod)
+      const existing = prev.find(p => p.lineKey === key)
+      if (existing) {
+        return prev.map(p => p.lineKey === key ? { ...p, qty: p.qty + 1 } : p)
+      }
+      return [...prev, { ...prod, qty: 1, lineKey: key }]
     })
   }
 
-  const removeFromCart = (id) => setCart(prev => prev.filter(p => p.id !== id))
+  const removeFromCart = (lineKey) => setCart(prev => prev.filter(p => p.lineKey !== lineKey))
 
   const total = cart.reduce((sum, p) => sum + p.precio * p.qty, 0)
 
@@ -384,7 +394,7 @@ export default function Inventory() {
         <Grid container spacing={2} alignItems="stretch">
           {filtered.map(prod => (
             <Grid
-              key={prod.id}
+              key={getItemKey(prod)}
               item
               xs={6}
               sm={4}
@@ -429,9 +439,9 @@ export default function Inventory() {
           <List dense>
             {cart.map(item => (
               <ListItem
-                key={item.id}
+                key={item.lineKey}
                 secondaryAction={
-                  <IconButton edge="end" onClick={() => removeFromCart(item.id)}>
+                  <IconButton edge="end" onClick={() => removeFromCart(item.lineKey)}>
                     <DeleteIcon />
                   </IconButton>
                 }
