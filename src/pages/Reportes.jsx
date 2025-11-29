@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   Box, Paper, Typography, Stack, Divider, TextField, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, MenuItem, InputAdornment
+  TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, MenuItem, InputAdornment, IconButton
 } from '@mui/material'
 import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -9,6 +9,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
+import DeleteIcon from '@mui/icons-material/Delete'
 dayjs.extend(isBetween)
 
 // Util: calcular total
@@ -26,6 +27,7 @@ export default function Reportes() {
     dayjs().startOf('month'),
     dayjs().endOf('day'),
   ])
+  const [deletingId, setDeletingId] = React.useState(null)
 
   const filtered = React.useMemo(() => {
     const porOrden = ordenes.map((o) => {
@@ -117,6 +119,24 @@ export default function Reportes() {
     () => (porcentajeComision ? (totalPeriodo * porcentajeComision) / 100 : 0),
     [totalPeriodo, porcentajeComision]
   )
+
+  const handleDeleteOrden = async (ordenId) => {
+    if (!ordenId) return
+    const confirmed = window.confirm('¿Eliminar esta orden?')
+    if (!confirmed) return
+    try {
+      setDeletingId(ordenId)
+      const res = await fetch(`${API_BASE_URL}/ordenes/${ordenId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar la orden')
+      setOrdenes((prev) => prev.filter((o) => String(o.id) !== String(ordenId) && String(o.codigo) !== String(ordenId)))
+      setOrdenSel(null)
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo eliminar la orden')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
     // 🔹 Cargar empleadas una vez
   React.useEffect(() => {
@@ -255,6 +275,7 @@ export default function Reportes() {
                 <TableCell>No. Orden</TableCell>
                 <TableCell>Cliente</TableCell>
                 <TableCell align="right">Total</TableCell>
+                <TableCell align="center">Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -271,11 +292,24 @@ export default function Reportes() {
                   <TableCell align="right">
                     Q {calcTotal(o.items || []).toFixed(2)}
                   </TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteOrden(o.id ?? o.codigo)
+                      }}
+                      disabled={deletingId === (o.id ?? o.codigo)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <Typography color="text.secondary" align="center">
                       No hay ventas en el rango seleccionado
                     </Typography>
