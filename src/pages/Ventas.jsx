@@ -63,6 +63,7 @@ export default function Inventory() {
 
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
   const [categoriasServicios, setCategoriasServicios] = React.useState([])
+  const [marcasProductos, setMarcasProductos] = React.useState([])
   const [productos, setProductos] = React.useState([])
   const [servicios, setServicios] = React.useState([])
   const [empleadas, setEmpleadas] = React.useState([])
@@ -72,6 +73,7 @@ export default function Inventory() {
   const [mostrarNuevaEmpleada, setMostrarNuevaEmpleada] = React.useState(false)
   const [pendingItem, setPendingItem] = React.useState(null)
   const [descuentoPct, setDescuentoPct] = React.useState('0')
+  const [marca, setMarca] = React.useState('all')
 
   const [clientes, setClientes] = React.useState([])          // lista desde el backend
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
@@ -118,10 +120,17 @@ export default function Inventory() {
       if (category === 'all') return lista
       return lista.filter(item => String(item.categoria_id) === String(category))
     }
+    const filtrarPorMarca = (lista) => {
+      if (marca === 'all') return lista
+      return lista.filter(item => {
+        if (item.tipo !== 'producto') return true
+        return String(item.marca_id) === String(marca)
+      })
+    }
 
     if (tipoPOSset === 'prod') {
       // Solo productos
-      return filtrarPorCategoria(productosAdaptados)
+      return filtrarPorMarca(filtrarPorCategoria(productosAdaptados))
     }
 
     if (tipoPOSset === 'serv') {
@@ -136,8 +145,8 @@ export default function Inventory() {
     ]
 
     // En "Todo" puedes ignorar category o filtrar igual:
-    return filtrarPorCategoria(listaMixta)
-  }, [tipoPOSset, category, productos, servicios])
+    return filtrarPorMarca(filtrarPorCategoria(listaMixta))
+  }, [tipoPOSset, category, marca, productos, servicios])
 
 
 
@@ -177,6 +186,26 @@ export default function Inventory() {
       ]
 
       setCategoriasServicios(mapped)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarMarcasProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/marcas-productos`)
+      if (!res.ok) throw new Error('Error al obtener marcas de productos')
+      const data = await res.json()
+
+      const mapped = [
+        { id: 'all', label: 'Todas' },
+        ...data.map((m) => ({
+          id: String(m.id),
+          label: m.nombre,
+        })),
+      ]
+
+      setMarcasProductos(mapped)
     } catch (err) {
       console.error(err)
     }
@@ -431,6 +460,7 @@ export default function Inventory() {
   React.useEffect(() => {
       cargarCategoriasProductos()
       cargarCategoriasServicios()
+      cargarMarcasProductos()
       cargarProductos()
       cargarServicios()
       cargarClientes()
@@ -450,11 +480,40 @@ export default function Inventory() {
           onSelect={setTipoPOS}
         />
         {tipoPOSset == "prod" && (
-          <CategoryBar
-            categories={categoriasProductos}
-            selected={category}
-            onSelect={setCategory}
-          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{ mb: 1 }}
+          >
+            <TextField
+              select
+              label="Categoría"
+              size="small"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              sx={{ minWidth: 180 }}
+            >
+              {categoriasProductos.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Marca"
+              size="small"
+              value={marca}
+              onChange={(e) => setMarca(e.target.value)}
+              sx={{ minWidth: 180 }}
+            >
+              {marcasProductos.map((m) => (
+                <MenuItem key={m.id} value={m.id}>
+                  {m.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
         )}
         {tipoPOSset == "serv" && (
           <CategoryBar
