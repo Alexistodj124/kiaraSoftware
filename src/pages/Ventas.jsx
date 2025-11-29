@@ -6,6 +6,7 @@ import {
   TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
 import { API_BASE_URL } from '../config/api'
@@ -55,7 +56,7 @@ export default function Inventory() {
 
   // Dialog de datos del cliente
   const [openDialog, setOpenDialog] = React.useState(false)
-  const [venta, setVenta] = React.useState({ empleada: '', pago: '' , referencia: ''})
+  const [venta, setVenta] = React.useState({ pago: '' , referencia: ''})
   const [errors, setErrors] = React.useState({ nombre: '', telefono: '' })
 
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
@@ -63,6 +64,11 @@ export default function Inventory() {
   const [productos, setProductos] = React.useState([])
   const [servicios, setServicios] = React.useState([])
   const [empleadas, setEmpleadas] = React.useState([])
+  const [empleadaDialogOpen, setEmpleadaDialogOpen] = React.useState(false)
+  const [empleadaSeleccionadaId, setEmpleadaSeleccionadaId] = React.useState('')
+  const [nuevaEmpleada, setNuevaEmpleada] = React.useState({ nombre: '', telefono: '' })
+  const [mostrarNuevaEmpleada, setMostrarNuevaEmpleada] = React.useState(false)
+  const [pendingItem, setPendingItem] = React.useState(null)
   const [descuentoPct, setDescuentoPct] = React.useState('0')
 
   const [clientes, setClientes] = React.useState([])          // lista desde el backend
@@ -213,17 +219,20 @@ export default function Inventory() {
 
   const getItemKey = (item) => {
     const tipo = item.tipo || (item.esServicio ? 'servicio' : 'producto')
-    return `${tipo}-${item.id}`
+    const emp = item.empleada
+    const empKey = emp?.id ? `emp-${emp.id}` : emp?.nombre ? `emp-${emp.nombre}` : 'emp-none'
+    return `${tipo}-${item.id}-${empKey}`
   }
 
-  const addToCart = (prod) => {
+  const addToCartWithEmpleada = (prod, empleada) => {
+    const prodConEmp = { ...prod, empleada }
+    const key = getItemKey(prodConEmp)
     setCart(prev => {
-      const key = getItemKey(prod)
       const existing = prev.find(p => p.lineKey === key)
       if (existing) {
         return prev.map(p => p.lineKey === key ? { ...p, qty: p.qty + 1 } : p)
       }
-      return [...prev, { ...prod, qty: 1, lineKey: key }]
+      return [...prev, { ...prodConEmp, qty: 1, lineKey: key }]
     })
   }
 
@@ -233,6 +242,42 @@ export default function Inventory() {
   const pctNumber = Math.min(100, Math.max(0, parseFloat(descuentoPct) || 0))
   const descuentoQ = subtotal * (pctNumber / 100)
   const totalConDescuento = Math.max(0, subtotal - descuentoQ)
+
+  const handleProductClick = (prod) => {
+    setPendingItem(prod)
+    setEmpleadaDialogOpen(true)
+  }
+
+  const handleConfirmEmpleada = () => {
+    if (!pendingItem) return
+
+    let empleada = null
+    if (mostrarNuevaEmpleada && nuevaEmpleada.nombre.trim()) {
+      empleada = {
+        id: null,
+        nombre: nuevaEmpleada.nombre.trim(),
+        telefono: nuevaEmpleada.telefono.trim(),
+      }
+    } else if (empleadaSeleccionadaId) {
+      const emp = empleadas.find(e => String(e.id) === String(empleadaSeleccionadaId))
+      if (emp) empleada = emp
+    }
+
+    addToCartWithEmpleada(pendingItem, empleada)
+    setPendingItem(null)
+    setEmpleadaSeleccionadaId('')
+    setNuevaEmpleada({ nombre: '', telefono: '' })
+    setMostrarNuevaEmpleada(false)
+    setEmpleadaDialogOpen(false)
+  }
+
+  const handleCloseEmpleadaDialog = () => {
+    setPendingItem(null)
+    setEmpleadaSeleccionadaId('')
+    setNuevaEmpleada({ nombre: '', telefono: '' })
+    setMostrarNuevaEmpleada(false)
+    setEmpleadaDialogOpen(false)
+  }
 
   const handleOpenCheckout = () => {
     if (cart.length === 0) {
@@ -279,14 +324,6 @@ export default function Inventory() {
       telefono: cliente.telefono,
     }
 
-    // 2) Construir empleada
-    // Si tu venta.empleada es SOLO el nombre (de un dropdown), mandamos eso.
-    const empleadaPayload = {
-      nombre: venta.empleada,    // p.ej. "Ana"
-      // si luego quieres guardar también teléfono, puedes agregarlo aquí
-      // telefono: '...'
-    }
-
     // 3) Items: por ahora asumimos que TODO lo que vendes aquí son productos
     const itemsPayload = cart.map((item) => {
       if (item.cantidad === 9999) {
@@ -295,6 +332,13 @@ export default function Inventory() {
           servicio_id: item.id,
           cantidad: item.qty,
           precio_unitario: item.precio,
+          empleada: item.empleada
+            ? {
+                id: item.empleada.id ?? null,
+                nombre: item.empleada.nombre,
+                telefono: item.empleada.telefono ?? '',
+              }
+            : null,
         }
       }
 
@@ -303,6 +347,13 @@ export default function Inventory() {
         producto_id: item.id,
         cantidad: item.qty,
         precio_unitario: item.precio,
+        empleada: item.empleada
+          ? {
+              id: item.empleada.id ?? null,
+              nombre: item.empleada.nombre,
+              telefono: item.empleada.telefono ?? '',
+            }
+          : null,
       }
     })
 
@@ -311,7 +362,6 @@ export default function Inventory() {
       codigo: `ORD-${Date.now()}`,        // puedes cambiarlo por tu lógica de código
       fecha: new Date().toISOString(),
       cliente: clientePayload,
-      empleada: empleadaPayload,
       items: itemsPayload,
       descuento: descuentoQ,
       total: totalConDescuento,
@@ -409,7 +459,7 @@ export default function Inventory() {
             >
               <ProductCard
                 product={prod}
-                onClick={() => addToCart(prod)}
+                onClick={() => handleProductClick(prod)}
               />
             </Grid>
           ))}
@@ -500,6 +550,65 @@ export default function Inventory() {
         </Box>
       </Box>
 
+      {/* -------- DIALOG: EMPLEADA POR ITEM -------- */}
+      <Dialog open={empleadaDialogOpen} onClose={handleCloseEmpleadaDialog} fullWidth maxWidth="xs">
+        <DialogTitle>Asignar empleada</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              select
+              label="Empleada"
+              value={empleadaSeleccionadaId}
+              onChange={(e) => setEmpleadaSeleccionadaId(e.target.value)}
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    size="small"
+                    color={mostrarNuevaEmpleada ? 'primary' : 'default'}
+                    onClick={() => setMostrarNuevaEmpleada((p) => !p)}
+                    edge="end"
+                  >
+                    <AddCircleOutlineIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+            >
+              <MenuItem value="">Sin empleada</MenuItem>
+              {empleadas.map((empleada) => (
+                <MenuItem key={empleada.id} value={empleada.id}>
+                  {empleada.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {mostrarNuevaEmpleada && (
+              <>
+                <TextField
+                  label="Nombre de la empleada"
+                  value={nuevaEmpleada.nombre}
+                  onChange={(e) => setNuevaEmpleada(prev => ({ ...prev, nombre: e.target.value }))}
+                  fullWidth
+                  autoFocus
+                />
+                <TextField
+                  label="Teléfono"
+                  value={nuevaEmpleada.telefono}
+                  onChange={(e) => setNuevaEmpleada(prev => ({ ...prev, telefono: e.target.value }))}
+                  fullWidth
+                />
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEmpleadaDialog}>Cancelar</Button>
+          <Button variant="contained" onClick={handleConfirmEmpleada}>
+            Agregar al carrito
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* -------- DIALOG: DATOS DEL CLIENTE -------- */}
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="xs">
         <DialogTitle>Datos del cliente</DialogTitle>
@@ -574,38 +683,6 @@ export default function Inventory() {
               />
             )}
 
-            <TextField
-              autoFocus
-              select
-              label="Empleada"
-              value={venta.empleada}
-              onChange={(e) => setVenta(prev => ({ ...prev, empleada: e.target.value }))}
-              error={!!errors.empleada}
-              helperText={errors.empleada}
-              fullWidth
-            >
-              {empleadas.map((empleada) => (
-                <MenuItem key={empleada.id} value={empleada.nombre}>
-                  {empleada.nombre}
-                </MenuItem>
-              ))}
-            </TextField>
-            {/* <TextField
-              autoFocus
-              select
-              label="Tipo de Pago"
-              value={venta.empleada}
-              onChange={(e) => setVenta(prev => ({ ...prev, pago: e.target.value }))}
-              error={!!errors.pago}
-              helperText={errors.pago}
-              fullWidth
-            >
-              {tipoPago.map((pago) => (
-                <MenuItem key={pago.id} value={pago.nombre}>
-                  {pago.nombre}
-                </MenuItem>
-              ))}
-            </TextField> */}
             <TextField
               autoFocus
               select
