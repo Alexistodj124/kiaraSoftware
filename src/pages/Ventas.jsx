@@ -293,7 +293,7 @@ export default function Inventory() {
 
   const validate = () => {
     let ok = true
-    const e = { nombre: '', telefono: '' }
+    const e = { nombre: '', telefono: '', pago: '' }
 
     if (!cliente.nombre.trim()) {
       e.nombre = 'Ingresa el nombre'
@@ -306,6 +306,12 @@ export default function Inventory() {
       e.telefono = 'Ingresa un número válido (8–15 dígitos)'
       ok = false
     }
+
+    if (!venta.pago) {
+      e.pago = 'Selecciona un método de pago'
+      ok = false
+    }
+
     setErrors(e)
     return ok
   }
@@ -362,6 +368,8 @@ export default function Inventory() {
       codigo: `ORD-${Date.now()}`,        // puedes cambiarlo por tu lógica de código
       fecha: new Date().toISOString(),
       cliente: clientePayload,
+      metodo_pago: venta.pago || null,
+      referencia: venta.referencia || null,
       items: itemsPayload,
       descuento: descuentoQ,
       total: totalConDescuento,

@@ -183,7 +183,7 @@ export default function Reportes() {
               size="small"
               value={empleadaSel}
               onChange={(e) => setEmpleadaSel(e.target.value)}
-              fullWidth
+              sx={{ minWidth: 180, maxWidth: 220 }}
             >
               <MenuItem value="">
                 Todas
@@ -203,7 +203,7 @@ export default function Reportes() {
               size="small"
               value={tipoItemFiltro}
               onChange={(e) => setTipoItemFiltro(e.target.value)}
-              fullWidth
+              sx={{ minWidth: 180, maxWidth: 220 }}
             >
               <MenuItem value="">Productos y servicios</MenuItem>
               <MenuItem value="producto">Productos</MenuItem>
@@ -226,7 +226,7 @@ export default function Reportes() {
                   <InputAdornment position="end">%</InputAdornment>
                 ),
               }}
-              sx={{ maxWidth: 180 }}
+              sx={{ minWidth: 140, maxWidth: 200 }}
             />
 
             {/* Total comisión */}
@@ -254,7 +254,6 @@ export default function Reportes() {
                 <TableCell>Fecha</TableCell>
                 <TableCell>No. Orden</TableCell>
                 <TableCell>Cliente</TableCell>
-                <TableCell>Metodo de Pago</TableCell>
                 <TableCell align="right">Total</TableCell>
               </TableRow>
             </TableHead>
@@ -269,7 +268,6 @@ export default function Reportes() {
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
                   <TableCell>{o.codigo ?? o.id}</TableCell>
                   <TableCell>{o.cliente?.nombre}</TableCell>
-                  <TableCell>{o.metodo_pago ?? 'N/A'}</TableCell>
                   <TableCell align="right">
                     Q {calcTotal(o.items || []).toFixed(2)}
                   </TableCell>
