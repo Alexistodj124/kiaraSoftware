@@ -309,7 +309,7 @@ export default function Reportes() {
               ))}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <Typography color="text.secondary" align="center">
                       No hay ventas en el rango seleccionado
                     </Typography>
@@ -341,6 +341,7 @@ export default function Reportes() {
                 <TableRow>
                   <TableCell>Producto</TableCell>
                   <TableCell>SKU</TableCell>
+                  <TableCell>Empleada</TableCell>
                   <TableCell align="right">Precio</TableCell>
                   <TableCell align="right">Cant.</TableCell>
                   <TableCell align="right">Subtotal</TableCell>
@@ -380,11 +381,16 @@ export default function Reportes() {
                     it.servicio?.precio ?? 0
 
                   const qty = it.qty ?? it.cantidad ?? 1
+                  const empleadaNombre =
+                    typeof it.empleada === 'string'
+                      ? it.empleada
+                      : it.empleada?.nombre ?? 'N/A'
 
                   return (
                     <TableRow key={it.id}>
                       <TableCell>{nombre}</TableCell>
                       <TableCell>{sku}</TableCell>
+                      <TableCell>{empleadaNombre}</TableCell>
                       <TableCell align="right">Q {price.toFixed(2)}</TableCell>
                       <TableCell align="right">{qty}</TableCell>
                       <TableCell align="right">Q {(price * qty).toFixed(2)}</TableCell>
