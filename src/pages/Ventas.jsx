@@ -58,8 +58,8 @@ export default function Inventory() {
 
   // Dialog de datos del cliente
   const [openDialog, setOpenDialog] = React.useState(false)
-  const [venta, setVenta] = React.useState({ pago: '' , referencia: ''})
-  const [errors, setErrors] = React.useState({ nombre: '', telefono: '' })
+  const [venta, setVenta] = React.useState({ pago: '', referencia: '' })
+  const [errors, setErrors] = React.useState({ nombre: '', telefono: '', pago: '', referencia: '' })
 
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
   const [categoriasServicios, setCategoriasServicios] = React.useState([])
@@ -330,7 +330,7 @@ export default function Inventory() {
 
   const validate = () => {
     let ok = true
-    const e = { nombre: '', telefono: '', pago: '' }
+    const e = { nombre: '', telefono: '', pago: '', referencia: '' }
 
     if (!cliente.nombre.trim()) {
       e.nombre = 'Ingresa el nombre'
@@ -346,6 +346,11 @@ export default function Inventory() {
 
     if (!venta.pago) {
       e.pago = 'Selecciona un método de pago'
+      ok = false
+    }
+
+    if (requiereReferencia && !venta.referencia.trim()) {
+      e.referencia = 'Ingresa la referencia'
       ok = false
     }
 
@@ -405,8 +410,8 @@ export default function Inventory() {
       codigo: `ORD-${Date.now()}`,        // puedes cambiarlo por tu lógica de código
       fecha: new Date().toISOString(),
       cliente: clientePayload,
-      metodo_pago: venta.pago || null,
-      referencia: venta.referencia || null,
+      tipo_pago: venta.pago || null,
+      referencia: venta.referencia?.trim() || null,
       items: itemsPayload,
       descuento: descuentoQ,
       total: totalConDescuento,
@@ -445,6 +450,7 @@ export default function Inventory() {
       })
       setOpenDialog(false)
       setCliente({ nombre: '', telefono: '' })
+      setVenta({ pago: '', referencia: '' })
       setCart([])
 
     } catch (err) {
