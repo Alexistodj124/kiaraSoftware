@@ -14,7 +14,28 @@ dayjs.extend(isBetween)
 
 // Util: calcular total
 function calcTotal(items) {
-  return items.reduce((s, it) => s + it.price * it.qty, 0)
+  return items.reduce((s, it) => {
+    const price = it.price ?? it.precio_unitario ?? 0   // mock vs backend
+    const qty   = it.qty   ?? it.cantidad       ?? 1
+    return s + price * qty
+  }, 0)
+}
+
+// Devuelve el porcentaje de descuento aplicado a la orden (0 a 1)
+function obtenerPctDescuento(orden) {
+  const descuento = Number(orden?.descuento ?? 0)
+  const totalPagado = Number(orden?.total ?? 0)
+  if (descuento <= 0 || totalPagado < 0) return 0
+  const subtotal = totalPagado + descuento
+  if (subtotal <= 0) return 0
+  return Math.min(0.99, descuento / subtotal)
+}
+
+// Calcula el total visible aplicando el mismo % de descuento que tuvo la orden completa
+function calcTotalConDescuento(orden, itemsVisibles) {
+  const base = calcTotal(itemsVisibles || [])
+  const pctDesc = obtenerPctDescuento(orden)
+  return base * (1 - pctDesc)
 }
 
 export default function Reportes() {
@@ -76,17 +97,8 @@ export default function Reportes() {
       console.error(err)
     }
   }
-  function calcTotal(items) {
-    return items.reduce((s, it) => {
-      const price = it.price ?? it.precio_unitario ?? 0   // mock vs backend
-      const qty   = it.qty   ?? it.cantidad       ?? 1
-      return s + price * qty
-    }, 0)
-  }
-
-
   const totalPeriodo = filtered.reduce(
-    (acc, o) => acc + calcTotal(o.items || []),
+    (acc, o) => acc + calcTotalConDescuento(o, o.items || []),
     0
   )
   const totalCostos = filtered.reduce((acc, o) => {
@@ -103,14 +115,9 @@ export default function Reportes() {
     return acc + costoItems
   }, 0)
 
-  const totalDescuentos = filtered.reduce(
-    (acc, o) => acc + (o.descuento ?? 0),
-    0
-  )
-
   const gananciaNeta =
     !empleadaSel && !tipoItemFiltro
-      ? totalPeriodo - totalCostos - totalDescuentos
+      ? totalPeriodo - totalCostos
       : null
 
   const [porcentajeComision, setPorcentajeComision] = React.useState(0);
@@ -290,7 +297,7 @@ export default function Reportes() {
                   <TableCell>{o.codigo ?? o.id}</TableCell>
                   <TableCell>{o.cliente?.nombre}</TableCell>
                   <TableCell align="right">
-                    Q {calcTotal(o.items || []).toFixed(2)}
+                    Q {calcTotalConDescuento(o, o.items || []).toFixed(2)}
                   </TableCell>
                   <TableCell align="center">
                     <IconButton
@@ -410,7 +417,7 @@ export default function Reportes() {
                     Total
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    Q {ordenSel ? calcTotal(ordenSel.items).toFixed(2) : '0.00'}
+                    Q {ordenSel ? calcTotalConDescuento(ordenSel, ordenSel.items).toFixed(2) : '0.00'}
                   </TableCell>
                 </TableRow>
               </TableBody>
