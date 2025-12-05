@@ -332,6 +332,12 @@ export default function Reportes() {
               <Typography variant="body2" color="text.secondary">
                 Cliente: {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
               </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Tipo de pago: {ordenSel?.tipo_pago || 'N/D'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Referencia: {ordenSel?.referencia || 'N/D'}
+              </Typography>
             </Stack>
 
             <Divider sx={{ mb: 2 }} />
