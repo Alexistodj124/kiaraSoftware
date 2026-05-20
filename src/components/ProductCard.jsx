@@ -48,50 +48,6 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
     })
   }, [product])
 
-  const wrapDescription = (text, maxCharsPerLine, maxLines, addEllipsis = true) => {
-    if (!text) return ''
-
-    const words = text.split(' ')
-    const lines = []
-    let current = ''
-
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i]
-      const tentative = (current + ' ' + word).trim()
-
-      if (tentative.length > maxCharsPerLine) {
-        // cerramos la lA-nea actual
-        if (current) lines.push(current.trim())
-        else lines.push(word) // por si una palabra sola ya se pasa
-
-        current = ''
-        if (lines.length === maxLines) break
-      } else {
-        current = tentative
-      }
-
-      // si ya vamos en la A�ltima palabra
-      if (i === words.length - 1 && current && lines.length < maxLines) {
-        lines.push(current.trim())
-      }
-
-      if (lines.length === maxLines) break
-    }
-
-    // si quedaron palabras sin meter, aA�adimos "�?�"
-    const totalLength = text.length
-    const joined = lines.join(' ')
-    if (addEllipsis && totalLength > joined.length) {
-      lines[lines.length - 1] = lines[lines.length - 1] + '�?�'
-    }
-
-    return lines.join('\n')
-  }
-
-  const descFormateada = esServicio
-    ? wrapDescription(descripcion, 40, 10, false)
-    : wrapDescription(descripcion, 15, 5)
-
   const handleDelete = async (event) => {
     if (!isAdmin) return
     event.stopPropagation()
@@ -172,6 +128,10 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
+        height: '100%',
+        minWidth: 0,
+        maxWidth: '100%',
+        minHeight: 390,
         overflow: 'hidden',
       }}
     >
@@ -188,7 +148,7 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               borderBottom: 1,
               borderColor: 'divider',
               width: '100%',
-              aspectRatio: '4 / 3',
+              aspectRatio: '3 / 4',
               bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
             }}
           >
@@ -233,96 +193,174 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
             </Box>
           </Box>
         ) : (
-          // Encabezado decorativo para servicios
+          // Encabezado compacto para servicios (sin foto)
           <Box
             sx={{
+              position: 'relative',
               width: '100%',
-              aspectRatio: '4 / 2',
-              display: 'grid',
-              placeItems: 'center',
+              height: 6,
               background: (theme) =>
-                `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.16)}, ${alpha(theme.palette.primary.main, 0.08)})`,
-              borderBottom: 1,
-              borderColor: 'divider',
+                `linear-gradient(90deg, ${theme.palette.secondary.main}, ${alpha(theme.palette.secondary.main, 0.55)})`,
+            }}
+          />
+        )}
+
+        {/* Texto */}
+        {esServicio ? (
+          <Box
+            sx={{
+              px: { xs: 1.5, sm: 1.75 },
+              pt: isAdmin ? 5 : { xs: 1.5, sm: 1.75 },
+              pb: { xs: 1.5, sm: 1.75 },
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
             }}
           >
             <Box
               sx={{
-                width: 52,
-                height: 52,
-                borderRadius: '50%',
-                display: 'grid',
-                placeItems: 'center',
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
-                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1,
               }}
             >
-              <DesignServicesRoundedIcon />
-            </Box>
-            <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
               <Chip
                 size="small"
+                icon={
+                  <DesignServicesRoundedIcon sx={{ fontSize: 14 }} />
+                }
                 label="Servicio"
                 sx={{
-                  bgcolor: 'secondary.main',
-                  color: 'secondary.contrastText',
+                  bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.14),
+                  color: 'secondary.main',
                   height: 22,
                   fontSize: '0.7rem',
+                  fontWeight: 600,
+                  border: (theme) =>
+                    `1px solid ${alpha(theme.palette.secondary.main, 0.25)}`,
+                  '& .MuiChip-icon': {
+                    color: 'secondary.main',
+                    ml: 0.5,
+                  },
+                  '& .MuiChip-label': { px: 0.75 },
                 }}
               />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: '0.7rem' }}
+              >
+                #{id}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 0,
+                overflow: 'hidden',
+                px: 0.5,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  lineHeight: 1.25,
+                  textAlign: 'center',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 4,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                  fontSize: (() => {
+                    const len = (descripcion || '').length
+                    if (len <= 12) return '1.3rem'
+                    if (len <= 22) return '1.15rem'
+                    if (len <= 35) return '1rem'
+                    return '0.9rem'
+                  })(),
+                }}
+                title={descripcion}
+              >
+                {descripcion}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mt: 'auto', pt: 0.5 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  lineHeight: 1,
+                  fontSize: { xs: '1.05rem', sm: '1.15rem' },
+                }}
+              >
+                Q {precio.toFixed(2)}
+              </Typography>
             </Box>
           </Box>
-        )}
-
-        {/* Texto */}
-        <Box
-          sx={{
-            p: { xs: 1.25, sm: 1.5 },
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 0.5,
-          }}
-        >
-          <Typography
-            variant="subtitle2"
-            sx={{
-              whiteSpace: 'pre-line',
-              fontWeight: 600,
-              lineHeight: 1.3,
-              minHeight: 36,
-            }}
-            title={descripcion}
-          >
-            {descFormateada}
-          </Typography>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            noWrap
-            sx={{ fontSize: '0.7rem' }}
-          >
-            #{id}
-          </Typography>
-
+        ) : (
           <Box
             sx={{
-              mt: 0.5,
+              p: { xs: 1.25, sm: 1.5 },
+              flex: 1,
               display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 1,
+              gap: 0.5,
             }}
           >
             <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1 }}
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                lineHeight: 1.3,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minHeight: 36,
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+              }}
+              title={descripcion}
             >
-              Q {precio.toFixed(2)}
+              {descripcion}
             </Typography>
-            {!esServicio && (
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ fontSize: '0.7rem' }}
+            >
+              #{id}
+            </Typography>
+
+            <Box
+              sx={{
+                mt: 0.5,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1 }}
+              >
+                Q {precio.toFixed(2)}
+              </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -330,9 +368,9 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               >
                 Stock: {cantidad}
               </Typography>
-            )}
+            </Box>
           </Box>
-        </Box>
+        )}
       </CardActionArea>
 
       {isAdmin && (

@@ -106,6 +106,12 @@ export default function Inventory() {
       esServicio: false,
     }))
 
+    const categoriaServicioById = new Map(
+      categoriasServicios
+        .filter(c => c.id !== 'all')
+        .map(c => [String(c.id), c.label])
+    )
+
     const serviciosAdaptados = servicios.map(s => ({
       ...s,
       tipo: 'servicio',
@@ -115,6 +121,7 @@ export default function Inventory() {
       descripcion: s.descripcion,
       precio: Number(s.precio),
       imagen: s.imagen,
+      categoria_nombre: categoriaServicioById.get(String(s.categoria_id)) || 'Servicio',
     }))
 
     // Helper para filtrar por categoría
@@ -148,7 +155,7 @@ export default function Inventory() {
 
     // En "Todo" puedes ignorar category o filtrar igual:
     return filtrarPorMarca(filtrarPorCategoria(listaMixta))
-  }, [tipoPOSset, category, marca, productos, servicios])
+  }, [tipoPOSset, category, marca, productos, servicios, categoriasServicios])
 
 
 
@@ -560,13 +567,8 @@ export default function Inventory() {
           {filtered.map(prod => (
             <Grid
               key={getItemKey(prod)}
-              item
-              xs={6}
-              sm={4}
-              md={3}
-              lg={3}
-              xl={2}
-              sx={{ display: 'flex' }}
+              size={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
+              sx={{ display: 'flex', minWidth: 0 }}
             >
               <ProductCard
                 product={prod}
@@ -575,7 +577,7 @@ export default function Inventory() {
             </Grid>
           ))}
           {filtered.length === 0 && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Paper
                 sx={{
                   p: 4,
