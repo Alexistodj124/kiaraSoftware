@@ -3,11 +3,15 @@ import * as React from 'react'
 import {
   Box, Grid, Typography, Divider, List, ListItem, ListItemText,
   IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete, Paper, Chip
+  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete, Paper, Chip,
+  InputAdornment
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded'
+import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded'
+import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded'
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import { alpha } from '@mui/material/styles'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
@@ -520,42 +524,187 @@ export default function Inventory() {
           selected={tipoPOSset}
           onSelect={setTipoPOS}
         />
-        {tipoPOSset == "prod" && (
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.5}
-            sx={{ mb: 2 }}
-          >
-            <TextField
-              select
-              label="Categoría"
-              size="small"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              sx={{ minWidth: { xs: '100%', sm: 180 } }}
+        {tipoPOSset == "prod" && (() => {
+          const categoryActive = category !== 'all'
+          const marcaActive = marca !== 'all'
+          const menuProps = {
+            PaperProps: {
+              elevation: 0,
+              sx: (theme) => ({
+                mt: 1,
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow:
+                  '0 4px 14px rgba(0,0,0,0.04), 0 16px 32px rgba(0,0,0,0.08)',
+                maxHeight: 360,
+                '& .MuiList-root': {
+                  py: 0.5,
+                },
+                '& .MuiMenuItem-root': {
+                  mx: 0.5,
+                  my: 0.25,
+                  borderRadius: 1.25,
+                  fontSize: '0.875rem',
+                  py: 1,
+                  pr: 4,
+                  position: 'relative',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    '& .check-mark': { opacity: 1 },
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.12),
+                    },
+                  },
+                },
+              }),
+            },
+          }
+          const fieldSx = (active) => (theme) => ({
+            minWidth: { xs: '100%', sm: 220 },
+            '& .MuiOutlinedInput-root': {
+              bgcolor: 'background.paper',
+              borderRadius: 2.5,
+              transition: 'box-shadow 160ms ease, border-color 160ms ease',
+              '& fieldset': {
+                borderColor: active
+                  ? alpha(theme.palette.primary.main, 0.45)
+                  : alpha(theme.palette.primary.main, 0.18),
+              },
+              '&:hover fieldset': {
+                borderColor: alpha(theme.palette.primary.main, 0.55),
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 1.5,
+              },
+              boxShadow: active
+                ? `0 2px 8px ${alpha(theme.palette.primary.main, 0.12)}`
+                : 'none',
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              '&.Mui-focused': { color: 'primary.main' },
+            },
+          })
+          return (
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              sx={{ mb: 2 }}
             >
-              {categoriasProductos.map((cat) => (
-                <MenuItem key={cat.id} value={cat.id}>
-                  {cat.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Marca"
-              size="small"
-              value={marca}
-              onChange={(e) => setMarca(e.target.value)}
-              sx={{ minWidth: { xs: '100%', sm: 180 } }}
-            >
-              {marcasProductos.map((m) => (
-                <MenuItem key={m.id} value={m.id}>
-                  {m.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-        )}
+              <TextField
+                select
+                label="Categoría"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                sx={fieldSx(categoryActive)}
+                SelectProps={{
+                  MenuProps: menuProps,
+                  displayEmpty: false,
+                  renderValue: (selected) => {
+                    const cat = categoriasProductos.find(c => c.id === selected)
+                    return cat?.label || ''
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocalOfferRoundedIcon
+                        sx={{
+                          fontSize: 18,
+                          color: categoryActive ? 'primary.main' : 'text.secondary',
+                        }}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+              >
+                {categoriasProductos.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    <Box component="span" sx={{ flex: 1 }}>{cat.label}</Box>
+                    <CheckRoundedIcon
+                      className="check-mark"
+                      sx={{
+                        fontSize: 18,
+                        position: 'absolute',
+                        right: 12,
+                        opacity: 0,
+                        color: 'primary.main',
+                      }}
+                    />
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Marca"
+                value={marca}
+                onChange={(e) => setMarca(e.target.value)}
+                sx={fieldSx(marcaActive)}
+                SelectProps={{
+                  MenuProps: menuProps,
+                  renderValue: (selected) => {
+                    const m = marcasProductos.find(x => x.id === selected)
+                    return m?.label || ''
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <StorefrontRoundedIcon
+                        sx={{
+                          fontSize: 18,
+                          color: marcaActive ? 'primary.main' : 'text.secondary',
+                        }}
+                      />
+                    </InputAdornment>
+                  ),
+                }}
+              >
+                {marcasProductos.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    <Box component="span" sx={{ flex: 1 }}>{m.label}</Box>
+                    <CheckRoundedIcon
+                      className="check-mark"
+                      sx={{
+                        fontSize: 18,
+                        position: 'absolute',
+                        right: 12,
+                        opacity: 0,
+                        color: 'primary.main',
+                      }}
+                    />
+                  </MenuItem>
+                ))}
+              </TextField>
+              {(categoryActive || marcaActive) && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => {
+                    setCategory('all')
+                    setMarca('all')
+                  }}
+                  sx={{
+                    alignSelf: { xs: 'flex-start', sm: 'center' },
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    px: 1.5,
+                    '&:hover': {
+                      bgcolor: 'transparent',
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  Limpiar filtros
+                </Button>
+              )}
+            </Stack>
+          )
+        })()}
         {tipoPOSset == "serv" && (
           <CategoryBar
             categories={categoriasServicios}

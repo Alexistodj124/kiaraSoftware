@@ -1,56 +1,73 @@
 import * as React from 'react'
-import { Box, Stack } from '@mui/material'
-import CategoryTile from './CategoryTile'
+import { Box, Tabs, Tab } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 
-// Puedes pasar icons desde @mui/icons-material por props si quieres
 export default function CategoryBar({ categories, selected, onSelect }) {
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        mb: 2,
-        '&::after, &::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          bottom: 8,
-          width: 32,
-          pointerEvents: 'none',
-          zIndex: 1,
-        },
-        '&::before': {
-          left: 0,
-          background: (theme) =>
-            `linear-gradient(to right, ${theme.palette.background.default}, transparent)`,
-        },
-        '&::after': {
-          right: 0,
-          background: (theme) =>
-            `linear-gradient(to left, ${theme.palette.background.default}, transparent)`,
-        },
-      }}
-    >
-      <Box
-        sx={{
-          overflowX: 'auto',
-          pb: 1,
-          // ocultar la scrollbar pero permitir scroll
-          scrollbarWidth: 'thin',
-          '&::-webkit-scrollbar': { height: 6 },
-        }}
+    <Box sx={{ mb: 2 }}>
+      <Tabs
+        value={selected}
+        onChange={(_, newValue) => onSelect(newValue)}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={(theme) => ({
+          minHeight: 44,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          '& .MuiTabs-flexContainer': {
+            gap: 0.5,
+          },
+          '& .MuiTabs-scrollButtons': {
+            color: theme.palette.text.secondary,
+            '&.Mui-disabled': {
+              opacity: 0.3,
+            },
+          },
+          '& .MuiTab-root': {
+            minHeight: 44,
+            minWidth: 'auto',
+            px: 2,
+            textTransform: 'none',
+            fontWeight: 500,
+            fontSize: '0.875rem',
+            letterSpacing: '0.01em',
+            color: theme.palette.text.secondary,
+            transition: 'color 160ms ease, background-color 160ms ease',
+            borderRadius: '8px 8px 0 0',
+            '&:hover': {
+              color: theme.palette.text.primary,
+              backgroundColor: alpha(theme.palette.primary.main, 0.04),
+            },
+            '&.Mui-selected': {
+              fontWeight: 600,
+              color: theme.palette.primary.main,
+            },
+            '&.Mui-focusVisible': {
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            },
+          },
+          '& .MuiTabs-indicator': {
+            height: 3,
+            borderTopLeftRadius: 3,
+            borderTopRightRadius: 3,
+            backgroundColor: theme.palette.primary.main,
+          },
+        })}
       >
-        <Stack direction="row" spacing={1.25} sx={{ minWidth: 'min-content', px: 0.5 }}>
-          {categories.map((c) => (
-            <CategoryTile
+        {categories.map((c) => {
+          const Icon = c.icon
+          return (
+            <Tab
               key={c.id}
+              value={c.id}
               label={c.label}
-              icon={c.icon}
-              selected={selected === c.id}
-              onClick={() => onSelect(c.id)}
+              icon={Icon ? <Icon sx={{ fontSize: 18 }} /> : undefined}
+              iconPosition="start"
+              disableRipple={false}
             />
-          ))}
-        </Stack>
-      </Box>
+          )
+        })}
+      </Tabs>
     </Box>
   )
 }

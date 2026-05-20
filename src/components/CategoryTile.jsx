@@ -8,28 +8,44 @@ export default function CategoryTile({ label, selected, onClick, icon: Icon }) {
       onClick={onClick}
       role="button"
       tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
       sx={(theme) => ({
         cursor: 'pointer',
-        width: { xs: 76, sm: 84 },
         flex: '0 0 auto',
-        aspectRatio: '1 / 1',
-        borderRadius: 14 / 8,
-        display: 'grid',
-        placeItems: 'center',
-        px: 1,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.75,
+        height: 38,
+        px: 2,
+        borderRadius: 999,
+        whiteSpace: 'nowrap',
+        userSelect: 'none',
         bgcolor: selected ? 'primary.main' : 'background.paper',
         color: selected ? 'primary.contrastText' : 'text.primary',
-        border: `1px solid ${selected ? 'transparent' : theme.palette.divider}`,
+        border: `1px solid ${
+          selected ? 'transparent' : alpha(theme.palette.primary.main, 0.18)
+        }`,
         boxShadow: selected
-          ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
-          : '0 1px 2px rgba(0,0,0,0.03)',
+          ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.28)}`
+          : 'none',
         transition:
-          'transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease',
+          'transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease, border-color 160ms ease',
         '&:hover': {
-          transform: 'translateY(-2px)',
+          transform: 'translateY(-1px)',
+          bgcolor: selected
+            ? 'primary.main'
+            : alpha(theme.palette.primary.main, 0.06),
+          borderColor: selected
+            ? 'transparent'
+            : alpha(theme.palette.primary.main, 0.36),
           boxShadow: selected
-            ? `0 10px 22px ${alpha(theme.palette.primary.main, 0.34)}`
-            : '0 6px 16px rgba(0,0,0,0.08)',
+            ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.32)}`
+            : `0 2px 6px ${alpha(theme.palette.primary.main, 0.08)}`,
         },
         '&:focus-visible': {
           outline: `2px solid ${theme.palette.primary.main}`,
@@ -37,16 +53,18 @@ export default function CategoryTile({ label, selected, onClick, icon: Icon }) {
         },
       })}
     >
-      <Box sx={{ textAlign: 'center', lineHeight: 1 }}>
-        {Icon && <Icon sx={{ fontSize: 26, mb: 0.5 }} />}
-        <Typography
-          variant="caption"
-          noWrap
-          sx={{ fontWeight: selected ? 600 : 500, fontSize: '0.75rem' }}
-        >
-          {label}
-        </Typography>
-      </Box>
+      {Icon && <Icon sx={{ fontSize: 18 }} />}
+      <Typography
+        component="span"
+        sx={{
+          fontWeight: selected ? 600 : 500,
+          fontSize: '0.8125rem',
+          lineHeight: 1,
+          letterSpacing: '0.005em',
+        }}
+      >
+        {label}
+      </Typography>
     </Box>
   )
 }
