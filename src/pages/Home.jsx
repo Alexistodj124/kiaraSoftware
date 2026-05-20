@@ -1,13 +1,11 @@
 import * as React from 'react'
-import { Grid, Typography } from '@mui/material'
+import { Grid, Typography, Box } from '@mui/material'
 import AreaChartIcon from '@mui/icons-material/AreaChart'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
-import SettingsIcon from '@mui/icons-material/Settings'
 import ModuleCard from '../components/ModuleCard'
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale'
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits'
-import MoneyOffIcon from '@mui/icons-material/MoneyOff'
-import PortraitIcon from '@mui/icons-material/Portrait';
+import PortraitIcon from '@mui/icons-material/Portrait'
+import { useAuth } from '../context/AuthContext'
 
 const modules = [
   { to: '/reportes', title: 'Reportes', icon: AreaChartIcon, subtitle: 'Reportes de Ventas' },
@@ -18,20 +16,39 @@ const modules = [
 ]
 
 export default function Home() {
+  const { user } = useAuth() || {}
   return (
-    <>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-        Módulos
-      </Typography>
+    <Box sx={{ maxWidth: 1280, mx: 'auto' }}>
+      <Box sx={{ mb: { xs: 3, md: 4 } }}>
+        <Typography
+          variant="overline"
+          color="text.secondary"
+          sx={{ letterSpacing: '0.12em', fontWeight: 600 }}
+        >
+          Bienvenida{user?.username ? `, ${user.username}` : ''}
+        </Typography>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            mt: 0.5,
+            fontSize: { xs: '1.6rem', sm: '1.9rem', md: '2.1rem' },
+          }}
+        >
+          Módulos
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Elige el módulo en el que quieres trabajar.
+        </Typography>
+      </Box>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={{ xs: 2, md: 2.5 }}>
         {modules.map((m) => (
-          <Grid key={m.to} item xs={12} sm={12} md={12} lg={6}>
-
+          <Grid key={m.to} item xs={12} sm={6} md={6} lg={3}>
             <ModuleCard {...m} />
           </Grid>
         ))}
       </Grid>
-    </>
+    </Box>
   )
 }

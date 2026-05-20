@@ -3,10 +3,12 @@ import * as React from 'react'
 import {
   Box, Grid, Typography, Divider, List, ListItem, ListItemText,
   IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete
+  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete, Paper, Chip
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded'
+import { alpha } from '@mui/material/styles'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
 import { API_BASE_URL } from '../config/api'
@@ -89,7 +91,7 @@ export default function Inventory() {
 
   const requiereReferencia =
     venta.pago === 'Tarjeta' || venta.pago === 'Transferencia'
-    
+
   // Snackbar de confirmación
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
 
@@ -473,12 +475,38 @@ export default function Inventory() {
       cargarEmpleadas()
     }, [])
   return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
+    <Stack
+      direction={{ xs: 'column', lg: 'row' }}
+      spacing={{ xs: 2, lg: 2.5 }}
+      sx={{ alignItems: 'flex-start' }}
+    >
       {/* -------- IZQUIERDA: INVENTARIO -------- */}
-      <Box sx={{ flex: 3 }}>
-        <Typography variant="h5" sx={{ mb: 1.5, fontWeight: 600 }}>
-          Inventario
-        </Typography>
+      <Box sx={{ flex: { xs: '1 1 100%', lg: 3 }, minWidth: 0, width: '100%' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1,
+            mb: 2,
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: '1.4rem', md: '1.6rem' },
+            }}
+          >
+            Inventario
+          </Typography>
+          <Chip
+            label={`${filtered.length} ${filtered.length === 1 ? 'ítem' : 'ítems'}`}
+            size="small"
+            variant="outlined"
+          />
+        </Box>
 
         <CategoryBar
           categories={tipoPOS}
@@ -489,7 +517,7 @@ export default function Inventory() {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1.5}
-            sx={{ mb: 1 }}
+            sx={{ mb: 2 }}
           >
             <TextField
               select
@@ -497,7 +525,7 @@ export default function Inventory() {
               size="small"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 } }}
             >
               {categoriasProductos.map((cat) => (
                 <MenuItem key={cat.id} value={cat.id}>
@@ -511,7 +539,7 @@ export default function Inventory() {
               size="small"
               value={marca}
               onChange={(e) => setMarca(e.target.value)}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 } }}
             >
               {marcasProductos.map((m) => (
                 <MenuItem key={m.id} value={m.id}>
@@ -528,7 +556,7 @@ export default function Inventory() {
             onSelect={setCategory}
           />
         )}
-        <Grid container spacing={2} alignItems="stretch">
+        <Grid container spacing={{ xs: 1.5, sm: 2 }} alignItems="stretch">
           {filtered.map(prod => (
             <Grid
               key={getItemKey(prod)}
@@ -536,7 +564,9 @@ export default function Inventory() {
               xs={6}
               sm={4}
               md={3}
-              sx={{ display: 'flex' }}          // 🔹 todos los items son flex
+              lg={3}
+              xl={2}
+              sx={{ display: 'flex' }}
             >
               <ProductCard
                 product={prod}
@@ -546,7 +576,18 @@ export default function Inventory() {
           ))}
           {filtered.length === 0 && (
             <Grid item xs={12}>
-              <Typography color="text.secondary">No hay productos en esta categoría</Typography>
+              <Paper
+                sx={{
+                  p: 4,
+                  textAlign: 'center',
+                  border: (theme) => `1px dashed ${theme.palette.divider}`,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                <Typography color="text.secondary">
+                  No hay productos en esta categoría
+                </Typography>
+              </Paper>
             </Grid>
           )}
         </Grid>
@@ -554,53 +595,146 @@ export default function Inventory() {
       </Box>
 
       {/* -------- DERECHA: CARRITO -------- */}
-      <Box
+      <Paper
         sx={{
-          flex: 1,
-          borderLeft: 1,
-          borderColor: 'divider',
-          p: 2,
-          minWidth: 300,
+          flex: { xs: '1 1 100%', lg: 1 },
+          width: '100%',
+          minWidth: { xs: 'auto', lg: 320 },
+          p: { xs: 2, sm: 2.5 },
           bgcolor: 'background.paper',
           display: 'flex',
           flexDirection: 'column',
-          height: '80vh',
+          height: { xs: 'auto', lg: '82vh' },
+          maxHeight: { xs: 'none', lg: '82vh' },
+          position: { xs: 'static', lg: 'sticky' },
+          top: { lg: 16 },
+          alignSelf: { lg: 'flex-start' },
+          border: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-          🛒 Carrito
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1.5,
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            })}
+          >
+            <ShoppingCartRoundedIcon fontSize="small" />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Carrito
+          </Typography>
+          <Chip
+            size="small"
+            label={cart.reduce((s, it) => s + it.qty, 0)}
+            sx={{
+              ml: 'auto',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 600,
+              height: 22,
+            }}
+          />
+        </Box>
         <Divider sx={{ mb: 1 }} />
 
-        <Box sx={{ flex: 1, overflowY: 'auto' }}>
-          <List dense>
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            minHeight: { xs: 120, lg: 0 },
+            mx: -1,
+            px: 1,
+          }}
+        >
+          <List dense disablePadding>
             {cart.map(item => (
               <ListItem
                 key={item.lineKey}
+                disablePadding
+                sx={{
+                  py: 1,
+                  px: 1,
+                  borderRadius: 10 / 8,
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                  },
+                }}
                 secondaryAction={
-                  <IconButton edge="end" onClick={() => removeFromCart(item.lineKey)}>
-                    <DeleteIcon />
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    onClick={() => removeFromCart(item.lineKey)}
+                    sx={{ color: 'error.main' }}
+                  >
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
                 }
               >
                 <ListItemText
                   primary={`${item.descripcion}`}
-                  secondary={`Q ${item.precio.toFixed(2)} x ${item.qty}`}
+                  primaryTypographyProps={{
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                  }}
+                  secondary={
+                    <>
+                      Q {item.precio.toFixed(2)} × {item.qty}
+                      {item.empleada?.nombre && (
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="secondary.main"
+                          sx={{ display: 'block', fontWeight: 500 }}
+                        >
+                          {item.empleada.nombre}
+                        </Typography>
+                      )}
+                    </>
+                  }
+                  secondaryTypographyProps={{ fontSize: '0.75rem' }}
                 />
               </ListItem>
             ))}
           </List>
 
           {cart.length === 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-              No hay productos en el carrito
-            </Typography>
+            <Box
+              sx={{
+                textAlign: 'center',
+                py: 4,
+                color: 'text.secondary',
+              }}
+            >
+              <ShoppingCartRoundedIcon
+                sx={{
+                  fontSize: 40,
+                  opacity: 0.3,
+                  mb: 1,
+                }}
+              />
+              <Typography variant="body2">
+                No hay productos en el carrito
+              </Typography>
+            </Box>
           )}
         </Box>
 
         <Divider sx={{ mt: 1, mb: 2 }} />
 
-        <Box sx={{ textAlign: 'right' }}>
+        <Box>
           {isAdmin && (
             <TextField
               label="Descuento (%)"
@@ -609,29 +743,62 @@ export default function Inventory() {
               onChange={(e) => setDescuentoPct(e.target.value)}
               inputProps={{ min: 0, max: 100 }}
               size="small"
-              sx={{ mb: 1, width: 180 }}
+              fullWidth
+              sx={{ mb: 1.5 }}
             />
           )}
-          <Typography variant="body2" color="text.secondary">
-            Subtotal: Q {subtotal.toFixed(2)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Descuento: Q {descuentoQ.toFixed(2)} ({pctNumber.toFixed(0)}%)
-          </Typography>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Total: Q {totalConDescuento.toFixed(2)}
-          </Typography>
+          <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: 'text.secondary',
+              }}
+            >
+              <Typography variant="body2">Subtotal</Typography>
+              <Typography variant="body2">Q {subtotal.toFixed(2)}</Typography>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: 'text.secondary',
+              }}
+            >
+              <Typography variant="body2">
+                Descuento ({pctNumber.toFixed(0)}%)
+              </Typography>
+              <Typography variant="body2">− Q {descuentoQ.toFixed(2)}</Typography>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                mt: 0.5,
+              }}
+            >
+              <Typography sx={{ fontWeight: 600 }}>Total</Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, color: 'primary.main' }}
+              >
+                Q {totalConDescuento.toFixed(2)}
+              </Typography>
+            </Box>
+          </Stack>
           <Button
             variant="contained"
             color="primary"
             disabled={cart.length === 0}
-            sx={{ mt: 1 }}
+            fullWidth
+            size="large"
             onClick={handleOpenCheckout}
           >
             Finalizar compra
           </Button>
         </Box>
-      </Box>
+      </Paper>
 
       {/* -------- DIALOG: EMPLEADA POR ITEM -------- */}
       <Dialog open={empleadaDialogOpen} onClose={handleCloseEmpleadaDialog} fullWidth maxWidth="xs">
@@ -684,7 +851,7 @@ export default function Inventory() {
             )}
           </Stack>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleCloseEmpleadaDialog}>Cancelar</Button>
           <Button variant="contained" onClick={handleConfirmEmpleada}>
             Agregar al carrito
@@ -799,7 +966,7 @@ export default function Inventory() {
             )}
           </Stack>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
           <Button variant="contained" onClick={handleConfirmCheckout}>
             Confirmar pedido
@@ -818,6 +985,6 @@ export default function Inventory() {
           {snack.msg}
         </Alert>
       </Snackbar>
-    </Box>
+    </Stack>
   )
 }

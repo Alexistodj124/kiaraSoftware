@@ -5,18 +5,26 @@ import { RouterProvider } from 'react-router-dom'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import theme from './theme.js'
 import router from './router.jsx'
+import '@fontsource/poppins/300.css'
+import '@fontsource/poppins/400.css'
+import '@fontsource/poppins/500.css'
+import '@fontsource/poppins/600.css'
+import '@fontsource/poppins/700.css'
 import '@fontsource/roboto/300.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
+import './index.css'
 import { AuthProvider } from './context/AuthContext'
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
-      <CssBaseline />
-      <RouterProvider router={router} basename="/kiara" />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <RouterProvider router={router} basename="/kiara" />
+      </ThemeProvider>
     </AuthProvider>
   </React.StrictMode>
 )

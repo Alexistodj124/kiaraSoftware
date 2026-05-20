@@ -10,6 +10,8 @@ import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
 import DeleteIcon from '@mui/icons-material/Delete'
+import AreaChartIcon from '@mui/icons-material/AreaChart'
+import { alpha } from '@mui/material/styles'
 dayjs.extend(isBetween)
 
 // Util: calcular total
@@ -36,6 +38,34 @@ function calcTotalConDescuento(orden, itemsVisibles) {
   const base = calcTotal(itemsVisibles || [])
   const pctDesc = obtenerPctDescuento(orden)
   return base * (1 - pctDesc)
+}
+
+function MetricCard({ label, value, color = 'primary.main', emphasis = false }) {
+  return (
+    <Paper
+      sx={(theme) => ({
+        flex: 1,
+        minWidth: 0,
+        p: 2,
+        bgcolor: emphasis ? alpha(theme.palette.primary.main, 0.06) : 'background.paper',
+        border: `1px solid ${theme.palette.divider}`,
+      })}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: 'block', fontWeight: 500, letterSpacing: '0.04em' }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="h6"
+        sx={{ fontWeight: 700, color, mt: 0.5, fontSize: { xs: '1.05rem', md: '1.2rem' } }}
+      >
+        {value}
+      </Typography>
+    </Paper>
+  )
 }
 
 export default function Reportes() {
@@ -163,19 +193,58 @@ export default function Reportes() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Reportes de ventas
-        </Typography>
-
-        
-        <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
-          {/* Fila original: rango de fechas + total período */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            alignItems="center"
+      <Box
+        sx={{
+          maxWidth: { xs: '100%', md: 1180 },
+          mx: 'auto',
+          mt: { xs: 1, md: 2 },
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            mb: 2.5,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              width: 44,
+              height: 44,
+              borderRadius: 12 / 8,
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            })}
           >
+            <AreaChartIcon />
+          </Box>
+          <Box>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: 700, fontSize: { xs: '1.4rem', md: '1.6rem' } }}
+            >
+              Reportes de ventas
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Resumen de ingresos por período, empleada y tipo
+            </Typography>
+          </Box>
+        </Box>
+
+        <Paper sx={{ p: { xs: 2, md: 2.5 }, mb: 2 }}>
+          {/* Fila 1: rango de fechas */}
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mb: 1, fontWeight: 600, letterSpacing: '0.04em' }}
+            >
+              PERÍODO
+            </Typography>
             <DateRangePicker
               calendars={2}
               value={range}
@@ -188,29 +257,30 @@ export default function Reportes() {
               }}
               localeText={{ start: 'Desde', end: 'Hasta' }}
             />
+          </Box>
 
-            <Chip
-              label={`Total en el período: Q ${totalPeriodo.toFixed(2)}`}
-              color="primary"
-              sx={{ fontWeight: 600 }}
-            />
-          </Stack>
+          <Divider sx={{ my: 2 }} />
 
-          {/* Nueva fila: empleada + porcentaje + total comisión */}
+          {/* Fila 2: filtros */}
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mb: 1, fontWeight: 600, letterSpacing: '0.04em' }}
+          >
+            FILTROS
+          </Typography>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            alignItems="center"
-            sx={{ mt: 2 }}
+            spacing={1.5}
+            sx={{ flexWrap: 'wrap' }}
           >
-            {/* Dropdown Empleada */}
             <TextField
               select
               label="Empleada"
               size="small"
               value={empleadaSel}
               onChange={(e) => setEmpleadaSel(e.target.value)}
-              sx={{ minWidth: 180, maxWidth: 220 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 }, flex: { sm: 1 } }}
             >
               <MenuItem value="">
                 Todas
@@ -223,23 +293,19 @@ export default function Reportes() {
               ))}
             </TextField>
 
-            {/* Filtro por tipo de item */}
             <TextField
               select
               label="Tipo de item"
               size="small"
               value={tipoItemFiltro}
               onChange={(e) => setTipoItemFiltro(e.target.value)}
-              sx={{ minWidth: 180, maxWidth: 220 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 }, flex: { sm: 1 } }}
             >
               <MenuItem value="">Productos y servicios</MenuItem>
               <MenuItem value="producto">Productos</MenuItem>
               <MenuItem value="servicio">Servicios</MenuItem>
             </TextField>
 
-
-
-            {/* Porcentaje comisión */}
             <TextField
               label="% Comisión"
               size="small"
@@ -253,179 +319,222 @@ export default function Reportes() {
                   <InputAdornment position="end">%</InputAdornment>
                 ),
               }}
-              sx={{ minWidth: 140, maxWidth: 200 }}
-            />
-
-            {/* Total comisión */}
-            <Chip
-              label={`Total comisión: Q ${totalComision.toFixed(2)}`}
-              color="secondary"
-              sx={{ fontWeight: 600 }}
-            />
-
-            {/* Ganancia neta (solo sin filtros) */}
-            <Chip
-              label={gananciaNeta !== null
-                ? `Ganancia neta: Q ${gananciaNeta.toFixed(2)}`
-                : 'Ganancia neta solo sin filtros'}
-              color={gananciaNeta !== null ? 'success' : 'default'}
-              sx={{ fontWeight: 600 }}
+              sx={{ minWidth: { xs: '100%', sm: 140 }, flex: { sm: 1 } }}
             />
           </Stack>
         </Paper>
 
-        <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Fecha</TableCell>
-                <TableCell>No. Orden</TableCell>
-                <TableCell>Cliente</TableCell>
-                <TableCell>Tipo de pago</TableCell>
-                <TableCell align="right">Total</TableCell>
-                <TableCell align="center">Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filtered.map((o) => (
-                <TableRow
-                  key={o.id}
-                  hover
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => setOrdenSel(o)}
-                >
-                  <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
-                  <TableCell>{o.codigo ?? o.id}</TableCell>
-                  <TableCell>{o.cliente?.nombre}</TableCell>
-                  <TableCell>{o.tipo_pago || 'N/D'}</TableCell>
-                  <TableCell align="right">
-                    Q {calcTotalConDescuento(o, o.items || []).toFixed(2)}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteOrden(o.id ?? o.codigo)
-                      }}
-                      disabled={deletingId === (o.id ?? o.codigo)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <Typography color="text.secondary" align="center">
-                      No hay ventas en el rango seleccionado
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+        {/* Métricas */}
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1.5}
+          sx={{ mb: 2.5 }}
+        >
+          <MetricCard
+            label="TOTAL DEL PERÍODO"
+            value={`Q ${totalPeriodo.toFixed(2)}`}
+            emphasis
+          />
+          <MetricCard
+            label="TOTAL COMISIÓN"
+            value={`Q ${totalComision.toFixed(2)}`}
+            color="secondary.main"
+          />
+          <MetricCard
+            label="GANANCIA NETA"
+            value={
+              gananciaNeta !== null
+                ? `Q ${gananciaNeta.toFixed(2)}`
+                : '—'
+            }
+            color={gananciaNeta !== null ? 'success.main' : 'text.secondary'}
+          />
+        </Stack>
 
-          </Table>
-        </TableContainer>
+        <Paper sx={{ overflow: 'hidden' }}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Detalle de órdenes
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {filtered.length} {filtered.length === 1 ? 'orden' : 'órdenes'} en el período
+            </Typography>
+          </Box>
+          <Divider />
+          <TableContainer sx={{ overflowX: 'auto', borderRadius: 0 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>No. Orden</TableCell>
+                  <TableCell>Cliente</TableCell>
+                  <TableCell>Tipo de pago</TableCell>
+                  <TableCell align="right">Total</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.map((o) => (
+                  <TableRow
+                    key={o.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => setOrdenSel(o)}
+                  >
+                    <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      {dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>{o.codigo ?? o.id}</TableCell>
+                    <TableCell>{o.cliente?.nombre}</TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={o.tipo_pago || 'N/D'}
+                        variant="outlined"
+                        sx={{ height: 22, fontSize: '0.7rem' }}
+                      />
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                      Q {calcTotalConDescuento(o, o.items || []).toFixed(2)}
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteOrden(o.id ?? o.codigo)
+                        }}
+                        disabled={deletingId === (o.id ?? o.codigo)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <Typography
+                        color="text.secondary"
+                        align="center"
+                        sx={{ py: 4 }}
+                      >
+                        No hay ventas en el rango seleccionado
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+
+            </Table>
+          </TableContainer>
+        </Paper>
 
         {/* -------- Dialog Detalle de Orden -------- */}
         <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
           <DialogTitle>Orden {ordenSel?.id}</DialogTitle>
           <DialogContent dividers>
-            <Stack spacing={1} sx={{ mb: 2 }}>
+            <Stack spacing={0.5} sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
+                <Box component="span" sx={{ fontWeight: 500 }}>Fecha: </Box>
+                {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Cliente: {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
+                <Box component="span" sx={{ fontWeight: 500 }}>Cliente: </Box>
+                {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Tipo de pago: {ordenSel?.tipo_pago || 'N/D'}
+                <Box component="span" sx={{ fontWeight: 500 }}>Tipo de pago: </Box>
+                {ordenSel?.tipo_pago || 'N/D'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Referencia: {ordenSel?.referencia || 'N/D'}
+                <Box component="span" sx={{ fontWeight: 500 }}>Referencia: </Box>
+                {ordenSel?.referencia || 'N/D'}
               </Typography>
             </Stack>
 
             <Divider sx={{ mb: 2 }} />
 
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Producto</TableCell>
-                  <TableCell>SKU</TableCell>
-                  <TableCell>Empleada</TableCell>
-                  <TableCell align="right">Precio</TableCell>
-                  <TableCell align="right">Cant.</TableCell>
-                  <TableCell align="right">Subtotal</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {ordenSel?.items?.map((it) => {
-                  let nombre = ''
-                  if (it.tipo === 'servicio') {
-                    nombre =
-                      it.servicio?.descripcion ||
-                      it.nombre ||
-                      `Servicio #${it.servicio_id ?? it.id}`
-                  } else { // asumimos 'producto'
-                    nombre =
-                      it.producto?.descripcion ||
-                      it.nombre ||
-                      `Producto #${it.producto_id ?? it.id}`
-                  }
+            <TableContainer sx={{ overflowX: 'auto' }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Producto</TableCell>
+                    <TableCell>SKU</TableCell>
+                    <TableCell>Empleada</TableCell>
+                    <TableCell align="right">Precio</TableCell>
+                    <TableCell align="right">Cant.</TableCell>
+                    <TableCell align="right">Subtotal</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {ordenSel?.items?.map((it) => {
+                    let nombre = ''
+                    if (it.tipo === 'servicio') {
+                      nombre =
+                        it.servicio?.descripcion ||
+                        it.nombre ||
+                        `Servicio #${it.servicio_id ?? it.id}`
+                    } else { // asumimos 'producto'
+                      nombre =
+                        it.producto?.descripcion ||
+                        it.nombre ||
+                        `Producto #${it.producto_id ?? it.id}`
+                    }
 
-                  // 🔹 SKU según tipo
-                  let sku = ''
-                  if (it.tipo === 'servicio') {
-                    sku =
-                      it.sku ||
-                      (it.servicio_id ? `SERV-${it.servicio_id}` : '')
-                  } else {
-                    sku =
-                      it.sku ||
-                      (it.producto_id ? `PROD-${it.producto_id}` : '')
-                  }
+                    // 🔹 SKU según tipo
+                    let sku = ''
+                    if (it.tipo === 'servicio') {
+                      sku =
+                        it.sku ||
+                        (it.servicio_id ? `SERV-${it.servicio_id}` : '')
+                    } else {
+                      sku =
+                        it.sku ||
+                        (it.producto_id ? `PROD-${it.producto_id}` : '')
+                    }
 
-                  const price =
-                    it.price ??                        // mock
-                    it.precio_unitario ??              // backend snapshot
-                    it.producto?.precio ??             // por si usas precio del producto
-                    it.servicio?.precio ?? 0
+                    const price =
+                      it.price ??                        // mock
+                      it.precio_unitario ??              // backend snapshot
+                      it.producto?.precio ??             // por si usas precio del producto
+                      it.servicio?.precio ?? 0
 
-                  const qty = it.qty ?? it.cantidad ?? 1
-                  const empleadaNombre =
-                    typeof it.empleada === 'string'
-                      ? it.empleada
-                      : it.empleada?.nombre ?? 'N/A'
+                    const qty = it.qty ?? it.cantidad ?? 1
+                    const empleadaNombre =
+                      typeof it.empleada === 'string'
+                        ? it.empleada
+                        : it.empleada?.nombre ?? 'N/A'
 
-                  return (
-                    <TableRow key={it.id}>
-                      <TableCell>{nombre}</TableCell>
-                      <TableCell>{sku}</TableCell>
-                      <TableCell>{empleadaNombre}</TableCell>
-                      <TableCell align="right">Q {price.toFixed(2)}</TableCell>
-                      <TableCell align="right">{qty}</TableCell>
-                      <TableCell align="right">Q {(price * qty).toFixed(2)}</TableCell>
-                    </TableRow>
-                  )
-                })}
+                    return (
+                      <TableRow key={it.id}>
+                        <TableCell>{nombre}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{sku}</TableCell>
+                        <TableCell>{empleadaNombre}</TableCell>
+                        <TableCell align="right">Q {price.toFixed(2)}</TableCell>
+                        <TableCell align="right">{qty}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 500 }}>
+                          Q {(price * qty).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
 
 
-                <TableRow>
-                  <TableCell colSpan={4} align="right" sx={{ fontWeight: 600 }}>
-                    Total
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    Q {ordenSel ? calcTotalConDescuento(ordenSel, ordenSel.items).toFixed(2) : '0.00'}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                  <TableRow>
+                    <TableCell colSpan={5} align="right" sx={{ fontWeight: 600 }}>
+                      Total
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      Q {ordenSel ? calcTotalConDescuento(ordenSel, ordenSel.items).toFixed(2) : '0.00'}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setOrdenSel(null)}>Cerrar</Button>
           </DialogActions>
         </Dialog>

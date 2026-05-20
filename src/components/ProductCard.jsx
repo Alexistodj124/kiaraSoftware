@@ -17,6 +17,8 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import DesignServicesRoundedIcon from '@mui/icons-material/DesignServicesRounded'
+import { alpha } from '@mui/material/styles'
 import { API_BASE_URL } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -164,29 +166,30 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
 
   return (
     <Card
-      elevation={3}
       sx={{
-        borderRadius: 3,
         position: 'relative',
-        flex: 1,                         // dY"1 llena el alto del Grid item
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
+        width: '100%',
+        overflow: 'hidden',
       }}
     >
       <CardActionArea
         onClick={onClick}
-        sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+        sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
       >
-        {!esServicio && (
-          // Imagen con altura fija para productos
+        {!esServicio ? (
+          // Imagen del producto: full-width con aspect ratio
           <Box
             sx={{
               position: 'relative',
               overflow: 'hidden',
               borderBottom: 1,
               borderColor: 'divider',
-              height: 140,                 // dY"1 todas las imA�genes misma altura
-              width: 150,
+              width: '100%',
+              aspectRatio: '4 / 3',
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
             }}
           >
             {imagen ? (
@@ -207,7 +210,6 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
                   height: '100%',
                   display: 'grid',
                   placeItems: 'center',
-                  bgcolor: 'action.hover',
                 }}
               >
                 <Typography variant="overline" color="text.secondary">
@@ -221,6 +223,52 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
                 size="small"
                 label={low ? 'Bajo stock' : 'En stock'}
                 color={low ? 'warning' : 'success'}
+                sx={{
+                  bgcolor: low ? 'warning.main' : 'success.main',
+                  color: '#fff',
+                  height: 22,
+                  fontSize: '0.7rem',
+                }}
+              />
+            </Box>
+          </Box>
+        ) : (
+          // Encabezado decorativo para servicios
+          <Box
+            sx={{
+              width: '100%',
+              aspectRatio: '4 / 2',
+              display: 'grid',
+              placeItems: 'center',
+              background: (theme) =>
+                `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.16)}, ${alpha(theme.palette.primary.main, 0.08)})`,
+              borderBottom: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <Box
+              sx={{
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                color: 'primary.main',
+              }}
+            >
+              <DesignServicesRoundedIcon />
+            </Box>
+            <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
+              <Chip
+                size="small"
+                label="Servicio"
+                sx={{
+                  bgcolor: 'secondary.main',
+                  color: 'secondary.contrastText',
+                  height: 22,
+                  fontSize: '0.7rem',
+                }}
               />
             </Box>
           </Box>
@@ -229,22 +277,21 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
         {/* Texto */}
         <Box
           sx={{
-            p: 1.5,
+            p: { xs: 1.25, sm: 1.5 },
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            ...(esServicio && {
-              width: '100%',
-              mt: isAdmin ? 4 : 1, // separa el texto de los botones flotantes
-            }),
+            gap: 0.5,
           }}
         >
           <Typography
             variant="subtitle2"
             sx={{
-              whiteSpace: 'pre-line',   // respeta el "\n"
-              ...(esServicio && { display: 'block' }),
+              whiteSpace: 'pre-line',
+              fontWeight: 600,
+              lineHeight: 1.3,
+              minHeight: 36,
             }}
             title={descripcion}
           >
@@ -255,8 +302,9 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
             variant="caption"
             color="text.secondary"
             noWrap
+            sx={{ fontSize: '0.7rem' }}
           >
-            {id}
+            #{id}
           </Typography>
 
           <Box
@@ -265,27 +313,22 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: 1,
             }}
           >
-            <Typography variant="body2">
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1 }}
+            >
               Q {precio.toFixed(2)}
             </Typography>
             {!esServicio && (
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ ml: 1 }}
+                sx={{ fontSize: '0.7rem' }}
               >
                 Stock: {cantidad}
-              </Typography>
-            )}
-            {esServicio && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: 1 }}
-              >
-                Stock: N/A
               </Typography>
             )}
           </Box>
@@ -301,25 +344,46 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               right: 8,
               display: 'flex',
               gap: 0.5,
+              zIndex: 2,
             }}
           >
             <IconButton
               size="small"
-              color="primary"
               onClick={(e) => {
                 e.stopPropagation()
                 setEditOpen(true)
               }}
+              sx={(theme) => ({
+                bgcolor: alpha('#fff', 0.92),
+                color: 'primary.main',
+                width: 30,
+                height: 30,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                '&:hover': {
+                  bgcolor: '#fff',
+                  color: theme.palette.primary.dark,
+                },
+              })}
             >
-              <EditIcon fontSize="small" />
+              <EditIcon sx={{ fontSize: 16 }} />
             </IconButton>
             <IconButton
               size="small"
-              color="error"
               onClick={handleDelete}
               disabled={deleting}
+              sx={(theme) => ({
+                bgcolor: alpha('#fff', 0.92),
+                color: 'error.main',
+                width: 30,
+                height: 30,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                '&:hover': {
+                  bgcolor: '#fff',
+                  color: theme.palette.error.dark,
+                },
+              })}
             >
-              <DeleteIcon fontSize="small" />
+              <DeleteIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
 
@@ -339,27 +403,29 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
                   fullWidth
                 />
                 <TextField
-                  label="DescripciA3n"
+                  label="Descripción"
                   value={form.descripcion}
                   onChange={(e) => setForm((prev) => ({ ...prev, descripcion: e.target.value }))}
                   fullWidth
                   multiline
                   minRows={2}
                 />
-                <TextField
-                  label="Costo"
-                  type="number"
-                  value={form.costo}
-                  onChange={(e) => setForm((prev) => ({ ...prev, costo: e.target.value }))}
-                  fullWidth
-                />
-                <TextField
-                  label="Precio"
-                  type="number"
-                  value={form.precio}
-                  onChange={(e) => setForm((prev) => ({ ...prev, precio: e.target.value }))}
-                  fullWidth
-                />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Costo"
+                    type="number"
+                    value={form.costo}
+                    onChange={(e) => setForm((prev) => ({ ...prev, costo: e.target.value }))}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Precio"
+                    type="number"
+                    value={form.precio}
+                    onChange={(e) => setForm((prev) => ({ ...prev, precio: e.target.value }))}
+                    fullWidth
+                  />
+                </Stack>
                 <TextField
                   label="Cantidad"
                   type="number"
@@ -369,7 +435,7 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
                 />
               </Stack>
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
               <Button
                 variant="contained"

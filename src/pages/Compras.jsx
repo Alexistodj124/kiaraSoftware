@@ -4,10 +4,13 @@ import {
   Paper, InputAdornment, Snackbar, Alert, Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions, IconButton
+  DialogActions, IconButton,
+  Divider
 } from '@mui/material'
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate'
 import AddIcon from '@mui/icons-material/Add'
+import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits'
+import { alpha } from '@mui/material/styles'
 
 import { API_BASE_URL } from '../config/api'
 
@@ -337,16 +340,90 @@ export default function NuevaCompra() {
     }
   }
 
+  const renderImagePicker = () => (
+    <Box sx={{ textAlign: 'center', py: 1 }}>
+      {preview ? (
+        <Box
+          component="img"
+          src={preview}
+          alt="Vista previa"
+          sx={{
+            width: { xs: 160, sm: 200 },
+            height: { xs: 160, sm: 200 },
+            objectFit: 'cover',
+            borderRadius: 3,
+            mb: 1.5,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            mx: 'auto',
+          }}
+        />
+      ) : (
+        <Box
+          sx={{
+            width: { xs: 160, sm: 200 },
+            height: { xs: 160, sm: 200 },
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+            border: (theme) => `2px dashed ${alpha(theme.palette.primary.main, 0.18)}`,
+            borderRadius: 3,
+            mx: 'auto',
+            mb: 1.5,
+            color: 'text.secondary',
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <AddPhotoAlternateIcon sx={{ fontSize: 40, opacity: 0.5 }} />
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              Sin imagen
+            </Typography>
+          </Box>
+        </Box>
+      )}
+      <Button variant="outlined" component="label" size="small">
+        Subir imagen
+        <input
+          hidden
+          accept="image/*"
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageChange}
+        />
+      </Button>
+    </Box>
+  )
 
   return (
-    <Box sx={{ maxWidth: 700, mx: 'auto', mt: 3 }}>
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Agregar nuevo producto
-        </Typography>
+    <Box sx={{ maxWidth: { xs: '100%', md: 760 }, mx: 'auto', mt: { xs: 1, md: 2 } }}>
+      <Paper sx={{ p: { xs: 2.5, md: 4 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+          <Box
+            sx={(theme) => ({
+              width: 42,
+              height: 42,
+              borderRadius: 12 / 8,
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            })}
+          >
+            <ProductionQuantityLimitsIcon />
+          </Box>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              Agregar nuevo producto
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Crea un nuevo producto o servicio para el catálogo
+            </Typography>
+          </Box>
+        </Box>
+        <Divider sx={{ my: 2 }} />
 
         <form onSubmit={handleSubmit}>
-          <Stack spacing={2}>
+          <Stack spacing={2.25}>
 
             <TextField
               select
@@ -362,95 +439,12 @@ export default function NuevaCompra() {
             </TextField>
 
             {/* Imagen */}
-            {requiereproducto && (
-            <Box sx={{ textAlign: 'center' }}>
-              {preview ? (
-                <Box
-                  component="img"
-                  src={preview}
-                  alt="Vista previa"
-                  sx={{
-                    width: 200,
-                    height: 200,
-                    objectFit: 'cover',
-                    borderRadius: 2,
-                    mb: 1,
-                    border: '2px solid #444',
-                  }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    width: 200,
-                    height: 200,
-                    display: 'grid',
-                    placeItems: 'center',
-                    bgcolor: 'action.hover',
-                    borderRadius: 2,
-                    mx: 'auto',
-                    mb: 1,
-                  }}
-                >
-                  <AddPhotoAlternateIcon fontSize="large" color="action" />
-                </Box>
-              )}
-              <Button variant="outlined" component="label">
-                Subir imagen
-                <input
-                  hidden
-                  accept="image/*"
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                />
-              </Button>
-
-            </Box>
-            )}
-            {requiereservicio && (
-            <Box sx={{ textAlign: 'center' }}>
-              {preview ? (
-                <Box
-                  component="img"
-                  src={preview}
-                  alt="Vista previa"
-                  sx={{
-                    width: 200,
-                    height: 200,
-                    objectFit: 'cover',
-                    borderRadius: 2,
-                    mb: 1,
-                    border: '2px solid #444',
-                  }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    width: 200,
-                    height: 200,
-                    display: 'grid',
-                    placeItems: 'center',
-                    bgcolor: 'action.hover',
-                    borderRadius: 2,
-                    mx: 'auto',
-                    mb: 1,
-                  }}
-                >
-                  <AddPhotoAlternateIcon fontSize="large" color="action" />
-                </Box>
-              )}
-              <Button variant="outlined" component="label">
-                Subir imagen
-                <input hidden accept="image/*" type="file" onChange={handleImageChange} />
-              </Button>
-            </Box>
-            )}
-
-            
+            {requiereproducto && renderImagePicker()}
+            {requiereservicio && renderImagePicker()}
 
             {/* Nombre */}
             {requiereproducto && (
-              <Box display="flex" gap={1} mt={2}>
+              <Box display="flex" gap={1}>
                 <TextField
                   select
                   label="Marca"
@@ -476,7 +470,12 @@ export default function NuevaCompra() {
                     setNuevaMarcaDescripcion('')
                     setOpenNuevaMarca(true)
                   }}
-                  sx={{ flexShrink: 0, alignSelf: 'center' }}
+                  sx={(theme) => ({
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
+                  })}
                 >
                   <AddIcon />
                 </IconButton>
@@ -531,7 +530,12 @@ export default function NuevaCompra() {
                   color="primary"
                   aria-label="Agregar categoría"
                   onClick={handleOpenNuevaCat}
-                  sx={{ flexShrink: 0, alignSelf: 'center' }}
+                  sx={(theme) => ({
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
+                  })}
                 >
                   <AddIcon />
                 </IconButton>
@@ -561,71 +565,82 @@ export default function NuevaCompra() {
                   color="primary"
                   aria-label="Agregar categoría"
                   onClick={handleOpenNuevaCat}
-                  sx={{ flexShrink: 0, alignSelf: 'center' }}
+                  sx={(theme) => ({
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.16) },
+                  })}
                 >
                   <AddIcon />
                 </IconButton>
               </Box>
             )}
 
-            {/* Cossto */}
+            {/* Costo + Precio + Cantidad (responsive) */}
             {requiereproducto && (
-              <TextField
-                label="Costo (Q)"
-                type="number"
-                required
-                InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
-                value={producto.costo}
-                onChange={(e) => setProducto((p) => ({ ...p, costo: e.target.value }))}
-              />
-            )}
-            {requiereservicio && (
-              <TextField
-                label="Costo (Q)"
-                type="number"
-                required
-                InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
-                value={servicio.costo}
-                onChange={(e) => setServicio((p) => ({ ...p, costo: e.target.value }))}
-              />
-            )}
-
-            {/* Precio */}
-            {requiereproducto && (
-              <TextField
-                label="Precio (Q)"
-                type="number"
-                required
-                InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
-                value={producto.precio}
-                onChange={(e) => setProducto((p) => ({ ...p, precio: e.target.value }))}
-              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  label="Costo (Q)"
+                  type="number"
+                  required
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
+                  value={producto.costo}
+                  onChange={(e) => setProducto((p) => ({ ...p, costo: e.target.value }))}
+                />
+                <TextField
+                  label="Precio (Q)"
+                  type="number"
+                  required
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
+                  value={producto.precio}
+                  onChange={(e) => setProducto((p) => ({ ...p, precio: e.target.value }))}
+                />
+                <TextField
+                  label="Cantidad"
+                  type="number"
+                  fullWidth
+                  value={producto.cantidad}
+                  onChange={(e) => setProducto((p) => ({ ...p, cantidad: e.target.value }))}
+                />
+              </Stack>
             )}
 
             {requiereservicio && (
-              <TextField
-                label="Precio (Q)"
-                type="number"
-                required
-                InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
-                value={servicio.precio}
-                onChange={(e) => setServicio((p) => ({ ...p, precio: e.target.value }))}
-              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  label="Costo (Q)"
+                  type="number"
+                  required
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
+                  value={servicio.costo}
+                  onChange={(e) => setServicio((p) => ({ ...p, costo: e.target.value }))}
+                />
+                <TextField
+                  label="Precio (Q)"
+                  type="number"
+                  required
+                  fullWidth
+                  InputProps={{ startAdornment: <InputAdornment position="start">Q</InputAdornment> }}
+                  value={servicio.precio}
+                  onChange={(e) => setServicio((p) => ({ ...p, precio: e.target.value }))}
+                />
+              </Stack>
             )}
 
-            {/* Cantidad */}
-            {requiereproducto && (
-              <TextField
-                label="Cantidad"
-                type="number"
-                fullWidth
-                value={producto.cantidad}
-                onChange={(e) => setProducto((p) => ({ ...p, cantidad: e.target.value }))}
-              />
-            )}
-
-            <Button variant="contained" color="primary" type="submit">
-              Guardar
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              size="large"
+              fullWidth
+              sx={{ py: 1.25, mt: 1 }}
+              disabled={loading}
+            >
+              {loading ? 'Guardando…' : 'Guardar'}
             </Button>
           </Stack>
         </form>
@@ -647,13 +662,13 @@ export default function NuevaCompra() {
               minRows={2}
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={handleCloseNuevaCat}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarNuevaCat}>
               Guardar
             </Button>
           </DialogActions>
-        </Dialog>   
+        </Dialog>
         <Dialog
           open={openNuevaMarca}
           onClose={() => setOpenNuevaMarca(false)}
@@ -679,14 +694,14 @@ export default function NuevaCompra() {
               minRows={2}
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setOpenNuevaMarca(false)}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarNuevaMarca}>
               Guardar
             </Button>
           </DialogActions>
         </Dialog>
-        
+
       </Paper>
 
       <Snackbar
@@ -713,7 +728,7 @@ export default function NuevaCompra() {
         </Alert>
       </Snackbar>
 
-      
+
 
     </Box>
   )
