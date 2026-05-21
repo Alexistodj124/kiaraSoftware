@@ -9,6 +9,10 @@ export default function ModuleCard({ to, title, icon: Icon, subtitle }) {
       sx={{
         overflow: 'hidden',
         height: '100%',
+        width: '100%',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <CardActionArea

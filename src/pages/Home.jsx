@@ -42,9 +42,13 @@ export default function Home() {
         </Typography>
       </Box>
 
-      <Grid container spacing={{ xs: 2, md: 2.5 }}>
+      <Grid container spacing={{ xs: 2, md: 2.5 }} alignItems="stretch">
         {modules.map((m) => (
-          <Grid key={m.to} item xs={12} sm={6} md={6} lg={3}>
+          <Grid
+            key={m.to}
+            size={{ xs: 12, sm: 6, md: 6, lg: 3 }}
+            sx={{ display: 'flex', minWidth: 0 }}
+          >
             <ModuleCard {...m} />
           </Grid>
         ))}
