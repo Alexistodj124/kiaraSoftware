@@ -4,7 +4,7 @@ import {
   Box, Grid, Typography, Divider, List, ListItem, ListItemText,
   IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete, Paper, Chip,
-  InputAdornment
+  InputAdornment, Drawer, Badge
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
@@ -12,6 +12,7 @@ import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded'
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded'
 import StorefrontRoundedIcon from '@mui/icons-material/StorefrontRounded'
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
 import { alpha } from '@mui/material/styles'
 import CategoryBar from '../components/CategoryBar'
 import ProductCard from '../components/ProductCard'
@@ -85,6 +86,7 @@ export default function Inventory() {
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '' })
   const [esClienteExistente, setEsClienteExistente] = React.useState(false)
   const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null)
+  const [mobileCartOpen, setMobileCartOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (!isAdmin) {
@@ -492,7 +494,14 @@ export default function Inventory() {
       sx={{ alignItems: 'flex-start' }}
     >
       {/* -------- IZQUIERDA: INVENTARIO -------- */}
-      <Box sx={{ flex: { xs: '1 1 100%', lg: 3 }, minWidth: 0, width: '100%' }}>
+      <Box
+        sx={{
+          flex: { xs: '1 1 100%', lg: 3 },
+          minWidth: 0,
+          width: '100%',
+          pb: { xs: 11, lg: 0 },
+        }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -745,7 +754,7 @@ export default function Inventory() {
 
       </Box>
 
-      {/* -------- DERECHA: CARRITO -------- */}
+      {/* -------- DERECHA (desktop) / DRAWER (mobile): CARRITO -------- */}
       <Paper
         sx={{
           flex: { xs: '1 1 100%', lg: 1 },
@@ -753,11 +762,11 @@ export default function Inventory() {
           minWidth: { xs: 'auto', lg: 320 },
           p: { xs: 2, sm: 2.5 },
           bgcolor: 'background.paper',
-          display: 'flex',
+          display: { xs: 'none', lg: 'flex' },
           flexDirection: 'column',
-          height: { xs: 'auto', lg: '82vh' },
-          maxHeight: { xs: 'none', lg: '82vh' },
-          position: { xs: 'static', lg: 'sticky' },
+          height: { lg: '82vh' },
+          maxHeight: { lg: '82vh' },
+          position: { lg: 'sticky' },
           top: { lg: 16 },
           alignSelf: { lg: 'flex-start' },
           border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -950,6 +959,315 @@ export default function Inventory() {
           </Button>
         </Box>
       </Paper>
+
+      {/* -------- MOBILE: STICKY BOTTOM BAR -------- */}
+      <Paper
+        elevation={0}
+        sx={(theme) => ({
+          display: { xs: 'flex', lg: 'none' },
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: theme.zIndex.appBar - 1,
+          alignItems: 'center',
+          gap: 1.5,
+          px: 2,
+          py: 1.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          borderRadius: 0,
+          bgcolor: 'background.paper',
+          boxShadow: '0 -6px 20px rgba(0,0,0,0.06)',
+          pb: `calc(env(safe-area-inset-bottom, 0px) + 12px)`,
+        })}
+      >
+        <Badge
+          badgeContent={cart.reduce((s, it) => s + it.qty, 0)}
+          color="primary"
+          overlap="circular"
+          sx={{
+            '& .MuiBadge-badge': {
+              fontWeight: 700,
+              fontSize: '0.7rem',
+              height: 20,
+              minWidth: 20,
+            },
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            })}
+          >
+            <ShoppingCartRoundedIcon />
+          </Box>
+        </Badge>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', lineHeight: 1, mb: 0.25 }}
+          >
+            Total
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.1 }}
+          >
+            Q {totalConDescuento.toFixed(2)}
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={() => setMobileCartOpen(true)}
+          sx={{ flexShrink: 0, px: 2.5, py: 1.25, fontWeight: 600 }}
+        >
+          Ver carrito
+        </Button>
+      </Paper>
+
+      {/* -------- MOBILE: DRAWER CARRITO -------- */}
+      <Drawer
+        anchor="bottom"
+        open={mobileCartOpen}
+        onClose={() => setMobileCartOpen(false)}
+        sx={{ display: { xs: 'block', lg: 'none' } }}
+        PaperProps={{
+          sx: {
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: '88vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        {/* Grabber handle */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            pt: 1,
+            pb: 0.5,
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.text.primary, 0.18),
+            })}
+          />
+        </Box>
+
+        {/* Drawer header */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 1.5,
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            })}
+          >
+            <ShoppingCartRoundedIcon fontSize="small" />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Carrito
+          </Typography>
+          <Chip
+            size="small"
+            label={cart.reduce((s, it) => s + it.qty, 0)}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              fontWeight: 600,
+              height: 22,
+            }}
+          />
+          <IconButton
+            onClick={() => setMobileCartOpen(false)}
+            sx={{ ml: 'auto' }}
+            aria-label="cerrar"
+          >
+            <KeyboardArrowDownRoundedIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+
+        {/* Drawer items list */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            px: 2,
+            py: 1,
+          }}
+        >
+          <List dense disablePadding>
+            {cart.map(item => (
+              <ListItem
+                key={item.lineKey}
+                disablePadding
+                sx={{
+                  py: 1,
+                  px: 1,
+                  borderRadius: 10 / 8,
+                }}
+                secondaryAction={
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    onClick={() => removeFromCart(item.lineKey)}
+                    sx={{ color: 'error.main' }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                }
+              >
+                <ListItemText
+                  primary={`${item.descripcion}`}
+                  primaryTypographyProps={{
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                  }}
+                  secondary={
+                    <>
+                      Q {item.precio.toFixed(2)} × {item.qty}
+                      {item.empleada?.nombre && (
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="secondary.main"
+                          sx={{ display: 'block', fontWeight: 500 }}
+                        >
+                          {item.empleada.nombre}
+                        </Typography>
+                      )}
+                    </>
+                  }
+                  secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                />
+              </ListItem>
+            ))}
+          </List>
+
+          {cart.length === 0 && (
+            <Box
+              sx={{
+                textAlign: 'center',
+                py: 6,
+                color: 'text.secondary',
+              }}
+            >
+              <ShoppingCartRoundedIcon
+                sx={{ fontSize: 48, opacity: 0.3, mb: 1 }}
+              />
+              <Typography variant="body2">
+                No hay productos en el carrito
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Drawer footer */}
+        <Box
+          sx={(theme) => ({
+            borderTop: `1px solid ${theme.palette.divider}`,
+            px: 2,
+            pt: 2,
+            pb: `calc(env(safe-area-inset-bottom, 0px) + 16px)`,
+            bgcolor: 'background.paper',
+          })}
+        >
+          {isAdmin && (
+            <TextField
+              label="Descuento (%)"
+              type="number"
+              value={descuentoPct}
+              onChange={(e) => setDescuentoPct(e.target.value)}
+              inputProps={{ min: 0, max: 100 }}
+              size="small"
+              fullWidth
+              sx={{ mb: 1.5 }}
+            />
+          )}
+          <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: 'text.secondary',
+              }}
+            >
+              <Typography variant="body2">Subtotal</Typography>
+              <Typography variant="body2">Q {subtotal.toFixed(2)}</Typography>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: 'text.secondary',
+              }}
+            >
+              <Typography variant="body2">
+                Descuento ({pctNumber.toFixed(0)}%)
+              </Typography>
+              <Typography variant="body2">− Q {descuentoQ.toFixed(2)}</Typography>
+            </Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                mt: 0.5,
+              }}
+            >
+              <Typography sx={{ fontWeight: 600 }}>Total</Typography>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, color: 'primary.main' }}
+              >
+                Q {totalConDescuento.toFixed(2)}
+              </Typography>
+            </Box>
+          </Stack>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={cart.length === 0}
+            fullWidth
+            size="large"
+            onClick={() => {
+              setMobileCartOpen(false)
+              handleOpenCheckout()
+            }}
+          >
+            Finalizar compra
+          </Button>
+        </Box>
+      </Drawer>
 
       {/* -------- DIALOG: EMPLEADA POR ITEM -------- */}
       <Dialog open={empleadaDialogOpen} onClose={handleCloseEmpleadaDialog} fullWidth maxWidth="xs">
