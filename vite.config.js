@@ -5,6 +5,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   base: '/kiara/',
+  server: {
+    proxy: {
+      '/api2': {
+        target: 'https://kiarasalon.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
